@@ -27,7 +27,7 @@ Operations placement rules:
 - Production contains the Production Board, Work Orders, production tasks, and Shop Schedule.
 - Use the labels Production, Approvals, Doc Library, and Shop Schedule.
 - Customer Portal access belongs inside customer/order records and portal workflows, not top-level Operations navigation.
-- Webstores and Wrap Command Center are Add-ons. Show their icons in a lower `Add-ons` section of the compact blue primary rail, not in the Operations module row.
+- Webstores and Wrap Center are Add-ons. Show icon-only buttons in a lower `Add-ons` section of the compact blue primary rail, with names exposed through hover/focus tooltips. Wrap Center uses a vehicle icon.
 
 Navigation rules:
 

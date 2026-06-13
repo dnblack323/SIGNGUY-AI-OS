@@ -142,9 +142,8 @@ function WorkspaceRail({ workspace, module, onSelect, onNavigate }) {
       <div className="rail-addons">
         <span>Add-ons</span>
         {addons.map(({ id, label, icon: Icon, workspace: addonWorkspace, module: addonModule }) => (
-          <button key={id} className={workspace === addonWorkspace && module === addonModule ? "active" : ""} onClick={() => onNavigate(addonWorkspace, addonModule)} aria-label={label} title={label}>
+          <button key={id} className={workspace === addonWorkspace && module === addonModule ? "active" : ""} onClick={() => onNavigate(addonWorkspace, addonModule)} aria-label={label} data-tooltip={label}>
             <Icon size={19} />
-            <span>{label}</span>
           </button>
         ))}
       </div>

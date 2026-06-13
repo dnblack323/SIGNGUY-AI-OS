@@ -33,6 +33,11 @@ button { cursor: pointer; }
 .rail-addons { margin-top: 16px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.1); display: flex; flex-direction: column; gap: 4px; }
 .rail-addons > span { margin-bottom: 2px; color: #6f7d91; text-align: center; text-transform: uppercase; letter-spacing: .12em; font-size: 7px; font-weight: 700; }
 .rail-addons button span { display: none; }
+.rail-addons button { position: relative; }
+.rail-addons button::after { content: attr(data-tooltip); position: absolute; z-index: 80; left: calc(100% + 12px); top: 50%; transform: translateY(-50%) translateX(-4px); width: max-content; max-width: 180px; border: 1px solid #334155; border-radius: 5px; background: #0f172a; color: white; padding: 6px 8px; box-shadow: 0 8px 24px rgba(15,23,42,.24); font-size: 9px; font-weight: 700; line-height: 1.2; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .14s ease, transform .14s ease, visibility .14s ease; }
+.rail-addons button::before { content: ""; position: absolute; z-index: 81; left: calc(100% + 7px); top: 50%; transform: translateY(-50%); border-width: 5px 5px 5px 0; border-style: solid; border-color: transparent #0f172a transparent transparent; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .14s ease, visibility .14s ease; }
+.rail-addons button:hover::after, .rail-addons button:focus-visible::after, .rail-addons button:hover::before, .rail-addons button:focus-visible::before { opacity: 1; visibility: visible; }
+.rail-addons button:hover::after, .rail-addons button:focus-visible::after { transform: translateY(-50%) translateX(0); }
 .rail-bottom { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .user-avatar { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: #dbeafe; color: #1e40af; font-size: 12px; font-weight: 700; border: 2px solid rgba(255,255,255,.18); }
 .user-avatar.small { width: 29px; height: 29px; border: 0; }

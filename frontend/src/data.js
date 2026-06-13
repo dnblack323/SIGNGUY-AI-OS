@@ -11,9 +11,9 @@ import {
   CheckSquare,
   ClipboardCheck,
   Clock3,
+  CarFront,
   Contact,
   FileText,
-  GalleryHorizontalEnd,
   HandCoins,
   HardHat,
   HelpCircle,
@@ -51,7 +51,7 @@ export const workspaces = [
 
 export const addons = [
   { id: "webstores", label: "Webstores", icon: Store, workspace: "operations", module: "webstores" },
-  { id: "wraps", label: "Wrap Command Center", icon: GalleryHorizontalEnd, workspace: "operations", module: "wraps" },
+  { id: "wraps", label: "Wrap Center", icon: CarFront, workspace: "operations", module: "wraps" },
 ];
 
 export const modules = {
