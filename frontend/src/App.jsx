@@ -91,9 +91,9 @@ function App() {
             <strong>{module === "dashboard" ? "Command Center" : activeModule?.[1]}</strong>
           </div>
         </div>
+        {workspace !== "home" && <ModuleNav workspace={workspace} module={module} onSelect={(id) => setModule(id)} />}
         <AppRibbon isDashboard={workspace === "home" && module === "dashboard"} onNavigate={navigate} onAction={showToast} />
         <div className="content-shell">
-          {workspace !== "home" && <ModuleNav workspace={workspace} module={module} onSelect={(id) => setModule(id)} />}
           <main className="main-content">
             {workspace === "home" && module === "dashboard" ? (
               <Dashboard onNavigate={navigate} />
@@ -180,15 +180,14 @@ function WorkspaceDashboard({ workspace }) {
 
 function ModuleNav({ workspace, module, onSelect }) {
   return (
-    <aside className="module-nav">
+    <nav className="module-nav" aria-label={`${workspace} modules`}>
       <button className={module === "dashboard" ? "active" : ""} onClick={() => onSelect("dashboard")}><LayoutDashboard size={17} />Overview</button>
-      <p>Workspace</p>
       {modules[workspace].map(([id, label, Icon, status]) => (
         <button key={id} className={module === id ? "active" : ""} onClick={() => onSelect(id)}>
           <Icon size={17} /><span>{label}</span>{status === "planned" && <span className="nav-dot" />}
         </button>
       ))}
-    </aside>
+    </nav>
   );
 }
 

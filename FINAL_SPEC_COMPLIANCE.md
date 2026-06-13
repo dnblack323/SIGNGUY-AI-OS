@@ -5,6 +5,7 @@ This file tracks the running preview against `MASTER_AGENT_REBUILD_PLAN.md`.
 ## Represented Now
 
 - Final compact shell with icon-only Home entry, Operations, Business, Productivity, AI Hub, and Settings.
+- No large or wide left sidebar. Workspace modules use compact horizontal navigation beneath the workspace header.
 - Help is a full compact menu opened through the `?` icon. It includes current-page tips and routes to documentation, onboarding, support, bug reports, feature requests, roadmap, and release notes.
 - Home is the global Command Center; workspace dashboards are separate contextual foundations.
 - Global search, global create, notifications, and compact Office-style Home ribbon.
