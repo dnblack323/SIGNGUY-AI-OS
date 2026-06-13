@@ -13,12 +13,21 @@ SignGuyAI is a multi-tenant SaaS operating system for custom sign shops.
 Final primary navigation:
 
 - Icon-only Home button: opens the global Command Center.
-- Operations: customers, contacts, quotes, orders, Order Items, Work Order Summaries, production, proofs, artwork, documents, schedule, installs/pickups, portals, Webstores operations, and Wrap Command Center.
+- Operations top-level modules: Customers, Quotes, Orders, Production, Approvals, and Doc Library.
 - Business: invoices, payments, AR, sales, expenses, deductions, taxes, payroll administration, purchasing, inventory alerts, reports, and margins.
 - Productivity: tasks, Kanban, reminders, checklists, internal messages, announcements, unified calendar, and team coordination.
 - AI Hub: assistant and tools shells, prompt library, onboarding, documentation, bug reports, feature requests, community, roadmap, release notes, and guarded AI tools.
 - Settings: company, permissions, Pricing Foundation, production stages, team/payroll, billing terms, integrations, Webstore settings, feature flags, and plan entitlements.
 - `?` Help icon: opens a compact Help menu containing current-page tips plus links to documentation categories, onboarding, support, bug reports, feature requests, roadmap, and release notes. Help does not consume primary navigation space.
+
+Operations placement rules:
+
+- Order Items are managed inside an Order and are not a top-level Operations module.
+- Work Orders are created, viewed, or downloaded from an Order and are also available inside Production. Use the user-facing label Work Order, not Work Order Summary, in navigation and common actions.
+- Production contains the Production Board, Work Orders, production tasks, and Shop Schedule.
+- Use the labels Production, Approvals, Doc Library, and Shop Schedule.
+- Customer Portal access belongs inside customer/order records and portal workflows, not top-level Operations navigation.
+- Webstores and Wrap Command Center are Add-ons. Show their icons in a lower `Add-ons` section of the compact blue primary rail, not in the Operations module row.
 
 Navigation rules:
 
@@ -37,14 +46,14 @@ Dashboards use one digest endpoint per context and reusable widgets. Home focuse
 
 Final commercial flow: `Quote -> Order -> Invoice`.
 
-Final production flow: `Order -> Order Items -> Work Order Summary -> Production Tasks`.
+Final production flow: `Order -> Order Items -> Work Order -> Production Tasks`.
 
 - Quote: pre-sale estimate/proposal with Quote Items that can be accepted and converted idempotently.
 - Order: main confirmed operational record.
 - Invoice: frozen billing document generated from an Order or manually where allowed.
 - Order Item: one commercial deliverable or charge. Never label it Line Item.
-- Work Order Summary: production-facing packet/view generated from production-required Order Items. Never label it Job Ticket.
-- Production Task: task/stage tied to an Order Item and optionally grouped by Work Order Summary.
+- Work Order: production-facing packet/view generated from production-required Order Items. Never label it Job Ticket.
+- Production Task: task/stage tied to an Order Item and optionally grouped by Work Order.
 
 Non-production fees, discounts, deposits, delivery, permits, design-only charges, and administration charges do not create production tasks unless explicitly marked `production_required`.
 

@@ -49,21 +49,19 @@ export const workspaces = [
   { id: "settings", label: "Settings", icon: Settings, description: "Shop configuration and permissions" },
 ];
 
+export const addons = [
+  { id: "webstores", label: "Webstores", icon: Store, workspace: "operations", module: "webstores" },
+  { id: "wraps", label: "Wrap Command Center", icon: GalleryHorizontalEnd, workspace: "operations", module: "wraps" },
+];
+
 export const modules = {
   operations: [
     ["customers", "Customers", Contact, "ready"],
     ["quotes", "Quotes", FileText, "ready"],
     ["orders", "Orders", ShoppingBag, "ready"],
-    ["order-items", "Order Items", ListChecks, "ready"],
-    ["work-orders", "Work Order Summaries", ClipboardCheck, "ready"],
-    ["production", "Production Board", PanelsTopLeft, "ready"],
-    ["schedule", "Schedule", CalendarDays, "preview"],
-    ["approvals", "Proofs & Approvals", PackageCheck, "preview"],
-    ["artwork", "Documents & Artwork", Images, "preview"],
-    ["wraps", "Wrap Command Center", GalleryHorizontalEnd, "planned"],
-    ["webstores", "Webstores", Store, "preview"],
-    ["customer-portal", "Customer Portal", Users, "planned"],
-    ["field-work", "Mobile / Field Work", HardHat, "planned"],
+    ["production", "Production", PanelsTopLeft, "ready"],
+    ["approvals", "Approvals", PackageCheck, "preview"],
+    ["artwork", "Doc Library", Images, "preview"],
   ],
   business: [
     ["pricing-calculator", "Pricing Calculator", Calculator, "ready"],
@@ -157,7 +155,7 @@ export const quickCreate = [
   ["New Task", "productivity", "tasks", CheckSquare],
   ["New Invoice", "business", "invoices", ReceiptText],
   ["Upload File", "operations", "artwork", Images],
-  ["Schedule Appointment", "operations", "schedule", CalendarDays],
+  ["Open Shop Schedule", "operations", "production", CalendarDays],
   ["Create Webstore", "operations", "webstores", Store],
   ["Ask AI", "ai-hub", "assistant", Bot],
 ];
@@ -171,9 +169,10 @@ export const notifications = [
 export const moduleDetails = {
   customers: { title: "Customers", description: "Manage customer records, contacts, notes, files, history, and activity.", metric: "248 active customers", action: "New customer" },
   quotes: { title: "Quotes", description: "Build accurate quotes and convert approved work into orders.", metric: "12 open quotes", action: "New quote" },
-  orders: { title: "Orders", description: "Track customer work from approved sale through completion.", metric: "31 active orders", action: "New order" },
-  production: { title: "Production Board", description: "Keep every Work Order Summary visible and moving through tenant-configurable production stages.", metric: "18 work orders in production", action: "View board" },
-  "work-orders": { title: "Work Order Summaries", description: "Review production-facing order summaries, required Order Items, tasks, materials, proofs, and due dates.", metric: "18 active work orders", action: "View work orders" },
+  orders: { title: "Orders", description: "Track customer work, manage Order Items, and create or download a Work Order when production needs it.", metric: "31 active orders", action: "New order" },
+  production: { title: "Production", description: "Manage the Production Board, Work Orders, production tasks, and Shop Schedule.", metric: "18 work orders in production", action: "Open production" },
+  approvals: { title: "Approvals", description: "Review and manage customer proofs, approval requests, revisions, and approval history.", metric: "3 awaiting review", action: "Open approvals" },
+  artwork: { title: "Doc Library", description: "Manage documents, artwork, templates, questionnaires, proof files, and linked assets.", metric: "Document foundation", action: "Open library" },
   webstores: { title: "Webstores", description: "Create and operate B2B, Fundraiser, Event, Promotional, and General stores using the shared platform core.", metric: "First expansion track", action: "Open webstores" },
   "pricing-foundation": { title: "Pricing Foundation", description: "Configure deterministic material, labor, markup, waste, rush, tax, and category pricing defaults.", metric: "Protected base behavior", action: "Review pricing setup" },
   tasks: { title: "Tasks", description: "One canonical task system for personal, production, and team work.", metric: "9 tasks due this week", action: "New task" },

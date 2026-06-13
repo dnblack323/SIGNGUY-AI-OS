@@ -37,7 +37,7 @@ const dashboardGroups = [
     actions: [
       ["Send Email", Mail, "productivity", "messages"],
       ["New Task", CheckSquare, "productivity", "tasks"],
-      ["Schedule Install", CalendarDays, "operations", "schedule"],
+      ["Schedule Install", CalendarDays, "operations", "production"],
       ["Open Calendar", CalendarDays, "productivity", "calendar"],
     ],
   },

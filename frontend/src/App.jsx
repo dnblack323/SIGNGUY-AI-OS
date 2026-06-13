@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import {
+  addons,
   moduleDetails,
   modules,
   notifications,
@@ -39,7 +40,10 @@ function App() {
   const [toast, setToast] = useState("");
 
   const workspaceInfo = workspace === "home" ? { label: "Home" } : workspaces.find((item) => item.id === workspace);
-  const activeModule = workspace === "home" ? null : modules[workspace].find((item) => item[0] === module);
+  const activeAddon = addons.find((item) => item.workspace === workspace && item.module === module);
+  const activeModule = workspace === "home"
+    ? null
+    : modules[workspace].find((item) => item[0] === module) || (activeAddon ? [activeAddon.module, activeAddon.label, activeAddon.icon, "preview"] : null);
 
   useEffect(() => {
     const onKeyDown = (event) => {
@@ -74,7 +78,7 @@ function App() {
 
   return (
     <div className="app-shell">
-      <WorkspaceRail workspace={workspace} onSelect={(id) => navigate(id, "dashboard")} />
+      <WorkspaceRail workspace={workspace} module={module} onSelect={(id) => navigate(id, "dashboard")} onNavigate={navigate} />
       <div className="app-frame">
         <TopBar
           onSearch={() => setSearchOpen(true)}
@@ -116,7 +120,7 @@ function App() {
   );
 }
 
-function WorkspaceRail({ workspace, onSelect }) {
+function WorkspaceRail({ workspace, module, onSelect, onNavigate }) {
   return (
     <aside className="workspace-rail">
       <div className="brand" aria-label="SignGuyAI">
@@ -135,6 +139,15 @@ function WorkspaceRail({ workspace, onSelect }) {
           </button>
         ))}
       </nav>
+      <div className="rail-addons">
+        <span>Add-ons</span>
+        {addons.map(({ id, label, icon: Icon, workspace: addonWorkspace, module: addonModule }) => (
+          <button key={id} className={workspace === addonWorkspace && module === addonModule ? "active" : ""} onClick={() => onNavigate(addonWorkspace, addonModule)} aria-label={label} title={label}>
+            <Icon size={19} />
+            <span>{label}</span>
+          </button>
+        ))}
+      </div>
       <div className="rail-bottom">
         <div className="user-avatar">BN</div>
       </div>
@@ -200,6 +213,11 @@ function ModulePage({ item, onAction }) {
     metric: status === "planned" ? "Planned capability" : "Preview module",
     action: status === "planned" ? "View target scope" : `Explore ${label}`,
   };
+  const embeddedOptions = id === "orders"
+    ? ["Order Items", "Create Work Order", "Download Work Order"]
+    : id === "production"
+      ? ["Production Board", "Work Orders", "Shop Schedule"]
+      : [];
 
   return (
     <div className="module-page">
@@ -212,6 +230,12 @@ function ModulePage({ item, onAction }) {
         <div><span>Current state</span><strong>{detail.metric}</strong><p>{status === "planned" ? "This module shell establishes navigation, permissions, route ownership, and target behavior before implementation." : "This preview demonstrates the intended module location and interaction pattern."}</p></div>
         <div className="scope-list"><h2>Target capability</h2>{["Stable workspace location", "Permission-filtered actions", "Shared notes and activity", "Global search registration", "Contextual documentation"].map((text) => <p key={text}><Check size={15} />{text}</p>)}</div>
       </section>
+      {embeddedOptions.length > 0 && (
+        <section className="embedded-options">
+          <h2>{id === "orders" ? "Order tools" : "Production tools"}</h2>
+          <div>{embeddedOptions.map((option) => <button key={option} onClick={() => onAction(`${option} selected`)}>{option}<ChevronRight size={15} /></button>)}</div>
+        </section>
+      )}
       <section className="empty-workspace">
         <Icon size={28} />
         <h2>{status === "planned" ? `${label} is coming in a later release` : `${label} preview workspace`}</h2>
@@ -270,7 +294,7 @@ function HelpPanel({ onClose, onNavigate }) {
 }
 
 function MobileNavigation({ workspace, module, onClose, onNavigate }) {
-  return <div className="mobile-nav"><div className="modal-heading"><strong>SignGuyAI</strong><button onClick={onClose}><X size={19} /></button></div><button className={workspace === "home" ? "workspace-mobile active" : "workspace-mobile"} onClick={() => onNavigate("home", "dashboard")}><Home size={18} />Home / Command Center</button>{workspaces.map(({ id, label, icon: Icon }) => <div key={id}><button className={workspace === id ? "workspace-mobile active" : "workspace-mobile"} onClick={() => onNavigate(id, "dashboard")}><Icon size={18} />{label}</button>{workspace === id && modules[id].map(([moduleId, moduleLabel]) => <button className={module === moduleId ? "module-mobile active" : "module-mobile"} key={moduleId} onClick={() => onNavigate(id, moduleId)}>{moduleLabel}</button>)}</div>)}</div>;
+  return <div className="mobile-nav"><div className="modal-heading"><strong>SignGuyAI</strong><button onClick={onClose}><X size={19} /></button></div><button className={workspace === "home" ? "workspace-mobile active" : "workspace-mobile"} onClick={() => onNavigate("home", "dashboard")}><Home size={18} />Home / Command Center</button>{workspaces.map(({ id, label, icon: Icon }) => <div key={id}><button className={workspace === id ? "workspace-mobile active" : "workspace-mobile"} onClick={() => onNavigate(id, "dashboard")}><Icon size={18} />{label}</button>{workspace === id && modules[id].map(([moduleId, moduleLabel]) => <button className={module === moduleId ? "module-mobile active" : "module-mobile"} key={moduleId} onClick={() => onNavigate(id, moduleId)}>{moduleLabel}</button>)}</div>)}<p className="mobile-addon-label">Add-ons</p>{addons.map(({ id, label, icon: Icon, workspace: addonWorkspace, module: addonModule }) => <button key={id} className={module === addonModule ? "workspace-mobile active" : "workspace-mobile"} onClick={() => onNavigate(addonWorkspace, addonModule)}><Icon size={18} />{label}</button>)}</div>;
 }
 
 function ModalShell({ children, onClose }) {

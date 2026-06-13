@@ -9,7 +9,9 @@ This file tracks the running preview against `MASTER_AGENT_REBUILD_PLAN.md`.
 - Help is a full compact menu opened through the `?` icon. It includes current-page tips and routes to documentation, onboarding, support, bug reports, feature requests, roadmap, and release notes.
 - Home is the global Command Center; workspace dashboards are separate contextual foundations.
 - Global search, global create, notifications, and compact Office-style Home ribbon.
-- Final user-facing `Order Items` and `Work Order Summaries` terminology.
+- Operations top-level navigation is limited to Customers, Quotes, Orders, Production, Approvals, and Doc Library.
+- Order Items and Work Order create/download actions live inside Orders. Work Orders and Shop Schedule live inside Production.
+- Webstores and Wrap Command Center use a lower Add-ons section in the compact blue rail.
 - Webstores shown as the first expansion preview, with approved store types in its target description.
 - Pricing Foundation in Settings and Pricing Calculator as a Business/global action.
 - Backend ownership folders: models, routes, services, repositories, integrations, shared.
