@@ -36,7 +36,7 @@ Navigation rules:
 - Office-style contextual ribbon exposes actions.
 - Detail tabs select record areas.
 - Filters narrow lists, cards identify attention, boards move work, and Settings controls behavior.
-- Ban large or wide permanent left sidebars everywhere in the app. The blue primary workspace rail is icon-only while collapsed and expands with icons and labels when hovered or keyboard-focused. Expansion slides over app content and must never shift or permanently consume content width. Use compact horizontal module navigation. Contextual drawers/panels may open temporarily for Settings, Documents, Help, or complex record tasks.
+- Ban large or wide permanent left sidebars everywhere in the app. The blue primary workspace rail is icon-only while collapsed and expands with icons and labels only after the user clicks/touches it. It automatically collapses when the user clicks/touches outside it. Expansion slides over app content and must never shift or permanently consume content width. Use compact horizontal module navigation.
 
 The Home Command Center uses the accepted compact dark rail, global search, global `+ Create`, notifications, Help/profile area, icon-over-label ribbon, white cards, thin borders, subtle shadows, and teal/navy/white visual language. Its compact ribbon actions are New Order, New Quote, New Customer, Pricing Calc, Send Proof, Request Approval, Send Document, New Invoice, Send Email, New Task, Schedule Install, and Open Calendar.
 

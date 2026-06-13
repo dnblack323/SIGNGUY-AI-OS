@@ -121,14 +121,19 @@ function App() {
 }
 
 function WorkspaceRail({ workspace, module, onSelect, onNavigate }) {
-  const collapseAfterPointerLeaves = (event) => {
-    if (event.currentTarget.contains(document.activeElement)) {
-      document.activeElement.blur();
-    }
-  };
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!expanded) return undefined;
+    const collapseOutside = (event) => {
+      if (!event.target.closest(".workspace-rail")) setExpanded(false);
+    };
+    document.addEventListener("pointerdown", collapseOutside);
+    return () => document.removeEventListener("pointerdown", collapseOutside);
+  }, [expanded]);
 
   return (
-    <aside className="workspace-rail" onMouseLeave={collapseAfterPointerLeaves}>
+    <aside className={expanded ? "workspace-rail expanded" : "workspace-rail"} onClick={() => setExpanded(true)}>
       <div className="brand" aria-label="SignGuyAI">
         <span>SG</span>
         <strong>SignGuy<span>AI</span></strong>
