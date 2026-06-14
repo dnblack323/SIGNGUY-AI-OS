@@ -26,6 +26,7 @@ import {
 import { AppRibbon } from "./components/ribbon/AppRibbon";
 import { Dashboard } from "./components/dashboard/Dashboard";
 import { StandaloneWebstoresShell, WebstoresWorkspace } from "./components/webstores/WebstoresWorkspace";
+import { api } from "./lib/api";
 
 const statusTone = { ready: "green", preview: "blue", planned: "gray" };
 
@@ -40,6 +41,7 @@ function App() {
   const [mobileNav, setMobileNav] = useState(false);
   const [query, setQuery] = useState("");
   const [toast, setToast] = useState("");
+  const [backendStatus, setBackendStatus] = useState("checking");
 
   const workspaceInfo = workspace === "home" ? { label: "Home" } : workspaces.find((item) => item.id === workspace);
   const activeAddon = addons.find((item) => item.workspace === workspace && item.module === module);
@@ -65,6 +67,14 @@ function App() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    api("/health")
+      .then(() => active && setBackendStatus("connected"))
+      .catch(() => active && setBackendStatus("offline"));
+    return () => { active = false; };
+  }, []);
+
   const navigate = (nextWorkspace, nextModule) => {
     setWorkspace(nextWorkspace);
     setModule(nextModule);
@@ -79,7 +89,7 @@ function App() {
   };
 
   if (standaloneWebstores) {
-    return <><StandaloneWebstoresShell onToast={showToast} />{toast && <div className="toast"><Check size={17} />{toast}</div>}</>;
+    return <><StandaloneWebstoresShell onToast={showToast} backendStatus={backendStatus} />{toast && <div className="toast"><Check size={17} />{toast}</div>}</>;
   }
 
   return (
@@ -94,6 +104,7 @@ function App() {
           onMenu={() => setMobileNav(true)}
           notificationOpen={notificationsOpen}
           helpOpen={helpOpen}
+          backendStatus={backendStatus}
         />
         {workspace !== "home" && <ModuleNav workspace={workspace} module={module} onSelect={(id) => setModule(id)} />}
         <AppRibbon isDashboard={workspace === "home" && module === "dashboard"} onNavigate={navigate} onAction={showToast} />
@@ -181,7 +192,7 @@ function WorkspaceRail({ workspace, module, onSelect, onNavigate }) {
   );
 }
 
-function TopBar({ onSearch, onCreate, onNotifications, onHelp, onMenu, notificationOpen, helpOpen }) {
+function TopBar({ onSearch, onCreate, onNotifications, onHelp, onMenu, notificationOpen, helpOpen, backendStatus }) {
   return (
     <header className="top-bar">
       <button className="mobile-menu" onClick={onMenu}><Menu size={20} /></button>
@@ -191,6 +202,7 @@ function TopBar({ onSearch, onCreate, onNotifications, onHelp, onMenu, notificat
         <kbd>⌘ K</kbd>
       </button>
       <div className="top-actions">
+        <span className={`backend-status ${backendStatus}`} title="Local review backend status"><i />{backendStatus === "connected" ? "Functional" : backendStatus === "offline" ? "Visual only" : "Checking"}</span>
         <button className="create-button" onClick={onCreate}><Plus size={17} />Create<ChevronDown size={15} /></button>
         <button className={notificationOpen ? "icon-button active" : "icon-button"} onClick={onNotifications} aria-label="Notifications">
           <Bell size={19} /><span className="notification-dot" />

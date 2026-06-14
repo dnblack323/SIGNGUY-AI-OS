@@ -140,13 +140,13 @@ function SectionPreview({ tab, notify }) {
   return <section className="webstore-section-preview"><Icon size={28} /><h2>{label}</h2><p>This management area is available regardless of publishing or cart entitlement. Commerce-only actions remain visibly gated.</p><button className="primary-button" onClick={() => notify(`${label} action selected`)}>Explore {label}<ChevronRight size={15} /></button></section>;
 }
 
-export function StandaloneWebstoresShell({ onToast }) {
+export function StandaloneWebstoresShell({ onToast, backendStatus }) {
   return (
     <div className="standalone-shell">
       <header className="standalone-topbar">
         <a className="standalone-brand" href="/"><span>SG</span><strong>Webstores</strong></a>
         <nav><button>Dashboard</button><button>Stores</button><button>Products</button><button>Owners</button><button>Reports</button></nav>
-        <div><a href="/">Full SignGuyAI</a><span className="user-avatar small">BN</span></div>
+        <div><span className={`backend-status ${backendStatus}`}><i />{backendStatus === "connected" ? "Functional" : backendStatus === "offline" ? "Visual only" : "Checking"}</span><a href="/">Full SignGuyAI</a><span className="user-avatar small">BN</span></div>
       </header>
       <main><WebstoresWorkspace standalone onToast={onToast} /></main>
     </div>

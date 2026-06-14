@@ -33,6 +33,8 @@ npm run dev
 
 The frontend runs at `http://localhost:5173`.
 
+For normal local review, double-click `Start Review.cmd`. See `LOCAL_REVIEW_GUIDE.md`.
+
 ## Backend
 
 ```bash
