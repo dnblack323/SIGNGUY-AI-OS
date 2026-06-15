@@ -20,6 +20,7 @@ This release establishes the controlling application shell and first structural 
 - Early Webstores expansion track
 - Always-available Webstores management with separately gated publishing and shopping cart/checkout
 - Focused Webstores standalone preview at `/?mode=webstores`
+- Protected standalone-first execution plan in `STANDALONE_WEBSTORES_MASTER_PLAN.md`
 - Working sample interactions
 - Honest module status pages for future releases
 
@@ -43,9 +44,9 @@ python -m pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
 
-The backend health endpoint is `http://localhost:8000/api/health`.
-The dashboard digest contract is `http://localhost:8000/api/digest`.
-The Webstores capability contract is `http://localhost:8000/api/webstores/capabilities`.
+The backend health endpoint is `http://localhost:8000/api/health` for direct backend development. The bundled local review launcher uses port `8001`.
+The dashboard digest contract is `/api/digest`.
+The Webstores capability contract is `/api/webstores/capabilities`.
 
 See `MASTER_AGENT_REBUILD_PLAN.md` for the sole controlling rebuild plan, `WEBSTORES_PRODUCT_SPEC.md` for the Webstores entitlement model, and `FINAL_SPEC_COMPLIANCE.md` for current preview coverage.
 

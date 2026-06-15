@@ -1,18 +1,23 @@
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
-$runtime = "C:\Users\thesi\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe"
-$python = if (Test-Path $runtime) { $runtime } else { "python" }
+$python = "python"
 $npm = "C:\Program Files\nodejs\npm.cmd"
 $review = Join-Path $root ".review"
 
 New-Item -ItemType Directory -Force -Path $review | Out-Null
 
+function Stop-ProcessTree($processId) {
+    if ($processId) {
+        Start-Process -FilePath "taskkill.exe" -ArgumentList "/PID", $processId, "/T", "/F" -WindowStyle Hidden -Wait -ErrorAction SilentlyContinue | Out-Null
+    }
+}
+
 function Stop-RecordedProcess([string]$name) {
     $pidFile = Join-Path $review "$name.pid"
     if (Test-Path $pidFile) {
         $processId = Get-Content $pidFile -ErrorAction SilentlyContinue
-        if ($processId) { Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue }
+        Stop-ProcessTree $processId
         Remove-Item $pidFile -Force -ErrorAction SilentlyContinue
     }
 }
@@ -20,7 +25,19 @@ function Stop-RecordedProcess([string]$name) {
 Stop-RecordedProcess "frontend"
 Stop-RecordedProcess "backend"
 
-$backend = Start-Process -FilePath $python -ArgumentList "-m", "uvicorn", "main:app", "--reload", "--host", "127.0.0.1", "--port", "8000" -WorkingDirectory (Join-Path $root "backend") -RedirectStandardOutput (Join-Path $review "backend.log") -RedirectStandardError (Join-Path $review "backend-error.log") -WindowStyle Hidden -PassThru
+foreach ($port in @(5173, 8001)) {
+    Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue |
+        Select-Object -ExpandProperty OwningProcess -Unique |
+        ForEach-Object { Stop-ProcessTree $_ }
+}
+
+& $python -c "import fastapi, uvicorn" 2>$null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Python must have FastAPI and Uvicorn installed. Run: python -m pip install -r backend\requirements.txt"
+    exit 1
+}
+
+$backend = Start-Process -FilePath $python -ArgumentList "-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", "8001" -WorkingDirectory (Join-Path $root "backend") -RedirectStandardOutput (Join-Path $review "backend.log") -RedirectStandardError (Join-Path $review "backend-error.log") -WindowStyle Hidden -PassThru
 $frontend = Start-Process -FilePath $npm -ArgumentList "run", "dev", "--", "--host", "127.0.0.1", "--port", "5173" -WorkingDirectory (Join-Path $root "frontend") -RedirectStandardOutput (Join-Path $review "frontend.log") -RedirectStandardError (Join-Path $review "frontend-error.log") -WindowStyle Hidden -PassThru
 
 $backend.Id | Set-Content (Join-Path $review "backend.pid")
@@ -30,7 +47,7 @@ $deadline = (Get-Date).AddSeconds(20)
 do {
     Start-Sleep -Milliseconds 500
     try {
-        $health = Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/health" -TimeoutSec 2
+        $health = Invoke-RestMethod -Uri "http://127.0.0.1:8001/api/health" -TimeoutSec 2
         $frontendReady = (Invoke-WebRequest -Uri "http://127.0.0.1:5173/" -UseBasicParsing -TimeoutSec 2).StatusCode -eq 200
     } catch {
         $health = $null
@@ -46,4 +63,4 @@ if (-not ($health -and $frontendReady)) {
 Write-Host "SignGuyAI review environment is ready."
 Write-Host "Full app: http://127.0.0.1:5173/"
 Write-Host "Webstores standalone: http://127.0.0.1:5173/?mode=webstores"
-Write-Host "Backend API docs: http://127.0.0.1:8000/docs"
+Write-Host "Backend API docs: http://127.0.0.1:8001/docs"

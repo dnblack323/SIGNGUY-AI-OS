@@ -4,13 +4,15 @@
 
 Use the local full-stack review environment while working with Codex. It provides immediate visual updates through Vite hot reload and a real local FastAPI backend for functional checks.
 
+Frontend edits hot-reload automatically. Restart `Start Review.cmd` after backend Python changes so the functional review uses the newest backend contracts.
+
 ## Start And Stop
 
 Double-click `Start Review.cmd` in the repository root.
 
 - Full SignGuyAI app: `http://127.0.0.1:5173/`
 - Webstores standalone: `http://127.0.0.1:5173/?mode=webstores`
-- Backend API documentation: `http://127.0.0.1:8000/docs`
+- Backend API documentation: `http://127.0.0.1:8001/docs`
 
 Double-click `Stop Review.cmd` when finished. Logs are stored in `.review/`.
 

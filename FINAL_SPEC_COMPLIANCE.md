@@ -16,6 +16,10 @@ This file tracks the running preview against `MASTER_AGENT_REBUILD_PLAN.md`.
 - Webstores shown as the first expansion preview, with approved store types in its target description.
 - Webstore management is always available in the main app. Publishing and Cart/Checkout are shown as separate feature gates.
 - A standalone Webstores-only shell reuses the same Webstores workspace and entitlement model.
+- Standalone Webstores is now the first commercial release priority under `STANDALONE_WEBSTORES_MASTER_PLAN.md`.
+- Standalone Home is operational: setup stores, questionnaires, owner approvals, launch blockers, live stores, new orders, activity, revenue, and stores needing action.
+- Webstore top tabs each use a contextual 12-action ribbon. Store type selection appears only inside New Store.
+- Standalone capability contracts expose the 5% fee, direct Stripe owner payout, draft preview, and blocked launch-readiness checks.
 - Pricing Foundation in Settings and Pricing Calculator as a Business/global action.
 - Backend ownership folders: models, routes, services, repositories, integrations, shared.
 - Base records include tenant ID, application ID, native UTC datetimes, and version.
