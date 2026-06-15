@@ -255,7 +255,8 @@ h1, h2 { font-family: Manrope, sans-serif; color: #172033; }
 .webstore-tabs button.active { border-color: #0d9488; background: #e2f3f1; color: #0f766e; box-shadow: inset 0 -3px #0d9488, 0 4px 12px rgba(13,148,136,.1); }
 .webstore-tabs button.active svg { color: #0d9488; }
 .webstore-ribbon { min-height: 0; padding: 3px 8px 2px; border: 1px solid #cbdce1; box-shadow: 0 5px 16px rgba(29,55,72,.08); }
-.webstore-ribbon-group { border-right: 2px solid #b9ccd3; padding: 0 4px 1px; }
+.webstore-ribbon-group { flex: 1 0 auto; border-right: 2px solid #b9ccd3; padding: 0 4px 1px; }
+.webstore-ribbon-group > div { justify-content: space-evenly; }
 .webstore-ribbon-group:nth-child(1) button svg { color: #0d9488; }
 .webstore-ribbon-group:nth-child(2) button svg { color: #2563eb; }
 .webstore-ribbon-group:nth-child(3) button svg { color: #7c3aed; }
@@ -264,7 +265,7 @@ h1, h2 { font-family: Manrope, sans-serif; color: #172033; }
 .webstore-ribbon-group button svg { width: 16px; height: 16px; }
 .webstore-ribbon-group button span { display: block; max-width: 86px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .webstore-ribbon-group small { padding-top: 0; font-size: 9px; line-height: 12px; }
-.store-detail-ribbon .webstore-ribbon-group { padding-left: 2px; padding-right: 2px; }
+.store-detail-ribbon .webstore-ribbon-group { flex-grow: 1; padding-left: 2px; padding-right: 2px; }
 .store-detail-ribbon .webstore-ribbon-group button { width: 82px; min-width: 82px; }
 .store-detail-ribbon .webstore-ribbon-group button span { max-width: 80px; }
 .webstore-home-grid .panel-title button, .panel-title button { font-size: 12px; }
