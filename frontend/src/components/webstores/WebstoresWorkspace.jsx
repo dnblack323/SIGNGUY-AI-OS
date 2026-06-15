@@ -70,6 +70,45 @@ const sectionDescriptions = {
   settings: "Feature gates, platform fees, Stripe, checkout, templates, approvals, branding, and audit rules.",
 };
 
+const workspaceData = {
+  templates: {
+    metrics: [["Product templates", "24", "18 active"], ["Bundle templates", "6", "4 active"], ["Used by stores", "11", "Across 3 stores"], ["Needs review", "3", "Missing cost or image"]],
+    primary: "Reusable templates", columns: ["Template", "Category", "Usage", "Status"],
+    rows: [["Classic Tee", "Apparel", "8 stores", "Ready"], ["Staff Uniform Pack", "Employee", "2 stores", "Ready"], ["Fundraiser Starter Pack", "Fundraiser", "1 store", "Review"], ["Event Sponsor Bundle", "Event", "0 stores", "Draft"]],
+    side: "Template rules", sideRows: [["Universal starting points", "Templates remain reusable"], ["Copied products", "Become store-specific"], ["Store pricing", "Can change after copy"]],
+  },
+  orders: {
+    metrics: [["New", "0", "No orders waiting"], ["Processing", "0", "Nothing in production"], ["Ready", "0", "Nothing awaiting pickup"], ["This month", "$0.00", "No sales recorded"]],
+    primary: "Webstore order queue", columns: ["Order", "Store", "Status", "Total"],
+    rows: [["No new orders", "Orders appear after checkout launches", "Waiting", "$0.00"]],
+    side: "Order workflow", sideRows: [["Received", "Review payment and items"], ["Production", "Send approved items"], ["Fulfillment", "Pickup, delivery, or shipping"]],
+  },
+  payments: {
+    metrics: [["Stripe accounts", "3", "1 needs onboarding"], ["Ready stores", "1", "Checkout capable"], ["Pending payouts", "$0.00", "No transfers pending"], ["Failed transfers", "0", "No action required"]],
+    primary: "Stripe Connect readiness", columns: ["Store", "Account", "Capabilities", "Status"],
+    rows: [["Northstar Staff Store", "Connected", "Charges and payouts", "Ready"], ["City Arts Summer Fundraiser", "Started", "Payouts incomplete", "Action needed"], ["Beacon Coffee Merch", "Not started", "None", "Not ready"]],
+    side: "Payment controls", sideRows: [["Checkout", "Blocked until store is ready"], ["Owner payouts", "Route through Connect"], ["Platform fees", "Configured in Settings"]],
+  },
+  reports: {
+    metrics: [["Gross sales", "$0.00", "Current period"], ["Orders", "0", "Current period"], ["Owner share", "$0.00", "Current period"], ["Donations", "$0.00", "Current period"]],
+    primary: "Store performance", columns: ["Store", "Orders", "Revenue", "Status"],
+    rows: [["Northstar Staff Store", "0", "$0.00", "Not live"], ["City Arts Summer Fundraiser", "0", "$0.00", "Not live"], ["Beacon Coffee Merch", "0", "$0.00", "Not live"]],
+    side: "Report shortcuts", sideRows: [["Sales overview", "Revenue and order trends"], ["Product detail", "Units and product mix"], ["Owner share", "Payout and fundraiser detail"]],
+  },
+  "owner-portal": {
+    metrics: [["Invites pending", "1", "Needs owner access"], ["Reviews pending", "2", "Waiting for owners"], ["Changes requested", "0", "No revisions requested"], ["Terms accepted", "0", "No completed approvals"]],
+    primary: "Owner review queue", columns: ["Store", "Owner", "Review status", "Next step"],
+    rows: [["City Arts Summer Fundraiser", "Maria Evans", "Pending", "Terms acceptance"], ["Northstar Staff Store", "Dana Cole", "Not sent", "Complete setup"], ["Beacon Coffee Merch", "Alex Stone", "Not ready", "Review questionnaire"]],
+    side: "Portal access", sideRows: [["Magic links", "Secure owner access"], ["Approval record", "Identity and timestamp"], ["Visible data", "Only the owner's store"]],
+  },
+  settings: {
+    metrics: [["Module access", "Enabled", "Standalone workspace"], ["Publishing", "Gated", "Entitlement required"], ["Checkout", "Gated", "Stripe and readiness"], ["Audit logging", "Enabled", "Changes recorded"]],
+    primary: "Webstore configuration", columns: ["Setting", "Current value", "Owner", "Status"],
+    rows: [["Default branding", "SignGuyAI Webstores", "Admin", "Configured"], ["Platform fee", "5% eligible amount", "Admin", "Configured"], ["Owner approval", "Required", "Admin", "Enabled"], ["Checkout activation", "Readiness gated", "System", "Enabled"]],
+    side: "Protected controls", sideRows: [["Publishing", "Cannot bypass readiness"], ["Internal costs", "Never shown to owners"], ["Terms snapshots", "Stored with approval"]],
+  },
+};
+
 export function WebstoresWorkspace({ standalone = false, onToast }) {
   const [tab, setTab] = useState("home");
   const [selectedStore, setSelectedStore] = useState(null);
@@ -98,7 +137,7 @@ export function WebstoresWorkspace({ standalone = false, onToast }) {
       {tabs.map(([id, label, Icon]) => <button key={id} className={tab === id ? "active" : ""} onClick={() => openTab(id)}><Icon size={15}/>{label}</button>)}
     </nav>
     {selectedStore ? <GroupedRibbon groups={groupedRibbons.storeDetail} action={action} label="store detail actions"/> : groupedRibbons[tab] ? <GroupedRibbon groups={groupedRibbons[tab]} action={action} label={`${tab} actions`}/> : <ContextRibbon tab={tab} action={action}/>}
-    {selectedStore ? <StoreDetail store={selectedStore} activeTab={storeDetailTab} setActiveTab={setStoreDetailTab} back={() => openTab("stores")} notify={notify}/> : tab === "home" ? <HomeDashboard action={action} openStore={openStore}/> : tab === "stores" ? <StoresPage openStore={openStore}/> : <ContextPage tab={tab} notify={notify}/>}
+    {selectedStore ? <StoreDetail store={selectedStore} activeTab={storeDetailTab} setActiveTab={setStoreDetailTab} back={() => openTab("stores")} notify={notify}/> : tab === "home" ? <HomeDashboard action={action} openStore={openStore}/> : tab === "stores" ? <StoresPage openStore={openStore}/> : <WorkspacePage tab={tab} notify={notify}/>}
     {newStoreOpen && <NewStoreDialog close={() => setNewStoreOpen(false)} notify={notify}/>}
   </div>;
 }
@@ -162,9 +201,23 @@ function StoreDetail({ store, activeTab, setActiveTab, back, notify }) {
   </section>;
 }
 
-function ContextPage({ tab, notify }) {
+function WorkspacePage({ tab, notify }) {
+  const data = workspaceData[tab];
   const [, label, Icon] = tabs.find(([id]) => id === tab);
-  return <section className="webstore-context-page"><div className="context-page-icon"><Icon size={25}/></div><div><span className="eyebrow">{label}</span><h2>{label} workspace</h2><p>{sectionDescriptions[tab]}</p></div><button className="primary-button" onClick={() => notify(`${label} primary action selected`)}>Open {label}<ChevronRight size={15}/></button></section>;
+  return <section className="workspace-page">
+    <div className="workspace-metrics">{data.metrics.map(([name, value, detail]) => <article key={name}><Icon size={17}/><small>{name}</small><strong>{value}</strong><span>{detail}</span></article>)}</div>
+    <div className="workspace-page-grid">
+      <section className="panel workspace-table-panel">
+        <PanelTitle title={data.primary} action={`Open ${label}`} onAction={() => notify(`${label} workspace opened`)}/>
+        <div className="workspace-table-head">{data.columns.map(column => <span key={column}>{column}</span>)}</div>
+        {data.rows.map((row, index) => <button key={`${row[0]}-${index}`} className="workspace-table-row" onClick={() => notify(`${row[0]} opened`)}>{row.map((cell, cellIndex) => <span key={`${cell}-${cellIndex}`} className={cellIndex === row.length - 1 ? "workspace-status" : ""}>{cell}</span>)}<ChevronRight size={14}/></button>)}
+      </section>
+      <section className="panel workspace-side-panel">
+        <PanelTitle title={data.side}/>
+        {data.sideRows.map(([title, detail]) => <button key={title} onClick={() => notify(`${title} opened`)}><span><strong>{title}</strong><small>{detail}</small></span><ChevronRight size={14}/></button>)}
+      </section>
+    </div>
+  </section>;
 }
 
 function NewStoreDialog({ close, notify }) {
