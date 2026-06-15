@@ -36,14 +36,18 @@ Top tabs:
 
 1. Home
 2. Stores
-3. Setup
-4. Products
-5. Templates
-6. Orders
-7. Payments
-8. Reports
-9. Owner Portal
-10. Settings
+3. Templates
+4. Orders
+5. Payments
+6. Reports
+7. Owner Portal
+8. Settings
+
+`Setup` and `Products` are not top tabs. There is no universal product catalog.
+Store-specific setup, products, questionnaires, preview, owner review, and
+launch controls live inside the selected Store workflow. `Templates` is the
+universal reusable starting-point library; copied templates become
+store-specific products.
 
 Default Home ribbon, maximum 12 actions:
 
@@ -60,7 +64,15 @@ Default Home ribbon, maximum 12 actions:
 11. View Orders
 12. QR Code / Share
 
-Each Webstore top tab owns a contextual ribbon of no more than 12 actions. The Home dashboard is operational, not a specification or education page. It focuses on stores in setup, questionnaires waiting, owner approvals, launch blockers, live stores, new orders, recent activity, revenue, and stores needing action. Store type selection appears only inside New Store. Launch/fee/Stripe rules appear only in relevant Setup, Payments, Owner Portal, Settings, or contextual warning surfaces.
+Each Webstore top tab owns a contextual ribbon of no more than 12 actions that
+are useful for the content currently open. Ribbon labels remain on one line;
+shorten labels instead of wrapping them. The Home dashboard is operational, not
+a specification or education page. It focuses on stores in setup,
+questionnaires waiting, owner approvals, launch blockers, live stores, new
+orders, recent activity, revenue, and stores needing action. Store type
+selection appears only inside New Store. Launch, fee, and Stripe rules appear
+only in the selected Store workflow, Payments, Owner Portal, Settings, or
+contextual warning surfaces.
 
 Standalone branding and visual rules:
 
