@@ -50,7 +50,7 @@ export const workspaces = [
 ];
 
 export const addons = [
-  { id: "webstores", label: "Webstores", icon: Store, workspace: "operations", module: "webstores" },
+  { id: "webstores", label: "Order Portals", icon: Store, workspace: "operations", module: "webstores" },
   { id: "wraps", label: "Wrap Center", icon: CarFront, workspace: "operations", module: "wraps" },
 ];
 
@@ -107,7 +107,7 @@ export const modules = {
     ["team-settings", "Team & Payroll", Clock3, "preview"],
     ["billing-terms", "Billing Terms", ReceiptText, "preview"],
     ["integrations", "Integrations", Repeat2, "planned"],
-    ["webstore-settings", "Webstore Settings", Store, "preview"],
+    ["webstore-settings", "Order Portal Settings", Store, "preview"],
     ["feature-flags", "Features & Entitlements", Settings, "preview"],
   ],
 };
@@ -156,7 +156,7 @@ export const quickCreate = [
   ["New Invoice", "business", "invoices", ReceiptText],
   ["Upload File", "operations", "artwork", Images],
   ["Open Shop Schedule", "operations", "production", CalendarDays],
-  ["Create Webstore", "operations", "webstores", Store],
+  ["Create Order Portal", "operations", "webstores", Store],
   ["Ask AI", "ai-hub", "assistant", Bot],
 ];
 
@@ -173,7 +173,7 @@ export const moduleDetails = {
   production: { title: "Production", description: "Manage the Production Board, Work Orders, production tasks, and Shop Schedule.", metric: "18 work orders in production", action: "Open production" },
   approvals: { title: "Approvals", description: "Review and manage customer proofs, approval requests, revisions, and approval history.", metric: "3 awaiting review", action: "Open approvals" },
   artwork: { title: "Doc Library", description: "Manage documents, artwork, templates, questionnaires, proof files, and linked assets.", metric: "Document foundation", action: "Open library" },
-  webstores: { title: "Webstores", description: "Create and operate B2B, Fundraiser, Event, Promotional, and General stores using the shared platform core.", metric: "First expansion track", action: "Open webstores" },
+  webstores: { title: "Order Portals", description: "Create and operate B2B, Fundraiser, Event, Promotional, Employee, and General order portals using the shared Order Portal Manager core.", metric: "Standalone-first track", action: "Open portals" },
   "pricing-foundation": { title: "Pricing Foundation", description: "Configure deterministic material, labor, markup, waste, rush, tax, and category pricing defaults.", metric: "Protected base behavior", action: "Review pricing setup" },
   tasks: { title: "Tasks", description: "One canonical task system for personal, production, and team work.", metric: "9 tasks due this week", action: "New task" },
   invoices: { title: "Invoices", description: "Create invoices, record payments, and monitor outstanding balances.", metric: "$18,460 outstanding", action: "New invoice" },
