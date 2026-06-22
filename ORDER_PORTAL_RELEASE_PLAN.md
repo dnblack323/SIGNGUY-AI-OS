@@ -1,203 +1,285 @@
-# Order Portal Manager Release Plan
+---
+source_pdf: Order_Portal_Manager_Master_Build_Spec-1.pdf
+source_pdf_sha256: 1220c11cd909eade18dcf6f96be6d8b73a58cb3c461e20a14ef15b2027edb277
+generated_on: 2026-06-18
+status: repo-ready draft
+---
 
-## Authority
+# ORDER_PORTAL_RELEASE_PLAN
 
-This release plan follows `ORDER_PORTAL_MANAGER_MASTER_SPEC.md`.
+# Purpose
 
-Early releases are internal engineering milestones. The first customer-sellable release must include checkout, Stripe, buyer orders, owner portal, reporting, and hardening.
+This document replaces/supersedes the old `STANDALONE_WEBSTORES_MASTER_PLAN.md`.
 
-## Release 0: Foundation Lock
+Old user-facing **Webstores** naming is deprecated. New user-facing product language is **Order Portal Manager**, **Order Portals**, and **Portal**.
 
-Goal: prevent duplicate systems before feature coding continues.
+Internal `webstores` names may remain temporarily in code, routes, branches, test fixtures, and database tables while migration happens. That compatibility naming must not control future product decisions.
 
-Deliver:
+## 1. Release Label Rule
 
-- Shared Order Portal Manager domain contract.
-- Standalone shell vs main-app adapter boundary.
-- Tenant/shop scoping rules.
-- Money/date/id conventions.
-- Activity/audit event rules.
-- Public and owner portal allowlist rules.
-- Compatibility note for temporary `webstores` naming.
+Early versions are internal engineering milestones, not sellable MVPs.
 
-Not sellable.
+Do not call the product sellable until it includes:
 
-## Release 1: Internal Portal Setup MVP
-
-Goal: create and manage draft portals.
-
-Deliver:
-
-- Standalone shell and dashboard.
-- Platform admin basics.
-- Sign shop account/login.
-- Order Portals list.
-- New Portal Wizard.
-- Store type selection.
-- Portal owner records.
-- Portal statuses.
-- Activity log.
-- Portal Detail workbench.
-- Basic branding.
-- Product template library.
-- Portal-specific product list.
-
-Not sellable.
-
-## Release 2: Questionnaire And Owner Portal
-
-Goal: collect owner setup information cleanly.
-
-Deliver:
-
-- Store Owner Portal login.
-- Questionnaire send/submission.
-- Store-type questionnaire sections.
-- Artwork/logo upload.
-- Known product selection.
-- "Open to suggestions" checkbox.
-- Owner progress dashboard.
-- Missing info queue.
-
-Not sellable.
-
-## Release 3: AI Setup And Product Builder
-
-Goal: make setup AI-assisted while keeping the shop in control.
-
-Deliver:
-
-- AI questionnaire summary.
-- AI missing-info detection.
-- AI field mapping suggestions.
-- AI product suggestions from templates.
-- AI product descriptions.
-- Suggested production cost.
-- Suggested selling price.
-- Suggested owner share.
-- Platform fee estimate.
-- Estimated shop gross.
-- Product suggestion review cards.
-- Human approval before products become final.
-
-Not sellable.
-
-## Release 4: Artwork, Mockups, And Launch Packet
-
-Goal: create the polished review package.
-
-Deliver:
-
-- Artwork file records.
-- Original artwork preservation.
-- Cleaned artwork as separate version.
-- Background removal / transparent PNG workflow.
-- Mockup generator.
-- Mockup review/approval.
+- Checkout.
+- Stripe.
+- Orders.
+- Reporting.
+- Owner Portal.
 - Store Launch Packet.
-- Pricing/fee summary.
+- Launch readiness gates.
+- Basic hardening.
+
+A preview that only has a wizard and pretty screens is not a sellable product. It is a nice hallucination with buttons.
+
+## 2. Release 0.1: Documentation Control
+
+Goal: lock the product direction.
+
+Required:
+
+- `ORDER_PORTAL_MANAGER_MASTER_SPEC.md`
+- `ORDER_PORTAL_MAIN_APP_INTEGRATION_SPEC.md`
+- `ORDER_PORTAL_RELEASE_PLAN.md`
+- Updated `WEBSTORES_PRODUCT_SPEC.md`
+- Updated `FINAL_SPEC_COMPLIANCE.md`
+- Supporting specs:
+  - Data model
+  - Workflow/status
+  - Checkout/ledger
+  - Owner portal
+  - AI
+  - Public storefront
+  - Agent build rules
+
+Exit criteria:
+
+- Every old Webstores doc points to the Order Portal spec or is marked historical/compatibility.
+- PDF hash is recorded in the master spec.
+- Release plan states checkout is required for first sellable version.
+- Integration spec separates shared core, standalone shell, and main-app adapter.
+- No doc tells agents to build a second standalone-only data model.
+
+## 3. Release 0.2: Shared Domain Core
+
+Goal: create core models/services without overbuilding UI.
+
+Required:
+
+- Portal model.
+- Store Owner model.
+- Questionnaire model.
+- Product Template model.
+- Portal Product model.
+- Artwork model.
+- Mockup model.
+- Launch Packet model.
+- Buyer Order model.
+- Revenue Ledger model.
+- Activity Log model.
+- Permission model.
+- Capability gate model.
+- Portal status machine.
+
+Exit criteria:
+
+- Shared core exists independent of standalone shell and main app shell.
+- All money fields are stored in cents.
+- Product templates copy into portal products.
+- Production cost is hidden from store owner/buyer permissions.
+- Major status changes emit activity events.
+
+## 4. Release 0.3: Standalone Structural Preview
+
+Goal: create a clickable standalone preview for flow validation.
+
+Required:
+
+- Standalone login shell.
+- Dashboard.
+- Portal list.
+- New Portal Wizard.
+- Store Owner records.
+- Portal detail tabs.
+- Questionnaire preview.
+- Product template selection preview.
+- Launch Packet preview.
+- Owner Portal preview.
+- Public storefront preview.
+
+Exit criteria:
+
+- UI language says Order Portal Manager.
+- Any remaining `webstores` code naming is internal only.
+- New Store Wizard is renamed or wrapped as New Portal Wizard.
+- No checkout simulation is presented as production-ready.
+- Structural preview is clearly marked not production complete.
+
+## 5. Release 0.4: AI Setup and Product Suggestions
+
+Goal: make the intake-to-setup process useful.
+
+Required:
+
+- Questionnaire sending/submission.
+- AI questionnaire summary.
+- Missing-info detection.
+- Product suggestion cards.
+- AI-generated product names.
+- AI-generated product descriptions.
+- AI-suggested categories.
+- Product selection workflow.
+- Human review gates.
+- AI usage/credit tracking.
+
+Exit criteria:
+
+- AI never directly publishes products.
+- AI outputs are editable.
+- Shop approval is required before launch packet.
+- AI credit entries are recorded.
+
+## 6. Release 0.5: Artwork and Mockups
+
+Goal: support owner artwork uploads and shop review.
+
+Required:
+
+- Upload original artwork.
+- Preserve original file.
+- Background removal/cleanup workflow.
+- Transparent PNG output.
+- Separate cleaned file version.
+- Artwork quality status.
+- Mockup generation.
+- Mockup approval workflow.
+- Mockups included in Store Launch Packet.
+
+Exit criteria:
+
+- Cleaned artwork is not automatically production-ready.
+- Production-ready approval is separate.
+- Original and cleaned assets are traceable.
+
+## 7. Release 0.6: Launch Packet and Owner Approval
+
+Goal: make the store owner approval process professional.
+
+Required:
+
+- Launch Packet generation.
+- Packet preview.
+- Product list.
 - Product mockups.
+- Product selling prices.
+- Store owner/fundraiser share.
+- Donation settings.
+- Payout terms.
 - Promotional copy.
 - QR code/share link.
-- Owner review.
-- Owner approval/change request.
+- Approval actions.
+- Change request workflow.
 
-Not sellable until checkout and money handling are complete.
+Exit criteria:
 
-## Release 5: Public Storefront, Checkout, And Buyer Orders
+- Portal cannot launch without owner approval unless an admin override is logged.
+- Production cost and shop margin are never shown to owner.
+- Approval/change requests create activity logs.
 
-Goal: enable buyers to order online.
+## 8. Release 0.7: Checkout, Stripe, Orders, Ledger
 
-Deliver:
+Goal: reach real commerce capability.
 
-- Public portal/store home.
-- Product list.
-- Product detail.
+Required:
+
+- Public storefront.
 - Cart.
-- Server-calculated checkout totals.
-- Stripe Checkout.
-- Confirmation page.
-- Buyer order records.
-- Order statuses.
-- Size/color/variant/personalization capture.
-- Fundraiser progress meter.
-- Donation tools.
-- Pickup/shipping info.
-- Basic public FAQ.
+- Server-side price validation.
+- Stripe checkout.
+- Buyer order creation.
+- Buyer confirmation.
+- Stripe onboarding support.
+- Store owner payout tracking.
+- Platform fee tracking.
+- Revenue ledger.
+- Refund adjustment entries.
+- Orders dashboard.
 
-Launch candidate only after Release 6 and Release 7 are complete.
+Exit criteria:
 
-## Release 6: Stripe, Billing, Fees, And Ledger
+- Checkout totals are calculated and validated backend-side.
+- Buyer orders are created only after payment confirmation rules pass.
+- Ledger records gross, production cost estimate, store owner share, platform fee, processing fee if known, shop gross, refunds, and adjustments.
+- Money values are stored in cents.
+- This is the first candidate for sellable MVP, assuming reports and hardening pass.
 
-Goal: make money tracking reliable.
+## 9. Release 0.8: Reports and Owner Portal Completion
 
-Deliver:
+Goal: make the portal useful after launch.
 
-- Sign shop Stripe setup.
-- Store owner payout onboarding where needed.
-- Store owner setup/monthly/relaunch billing settings.
-- Platform usage fee tracking.
-- Revenue ledger line items.
-- Payment reporting.
-- Payout reporting.
-- Refund records.
-- Failed payment/transfer visibility.
-- Immutable checkout pricing/fee snapshots.
+Required:
 
-Required before selling.
-
-## Release 7: Reports And Launch Hardening
-
-Goal: make the product ready for paid customers.
-
-Deliver:
-
-- Sign shop reports.
-- Store owner reports.
-- Product totals.
-- Size/variant breakdowns.
-- Pickup list.
-- Production summary.
-- Fundraiser totals.
+- Store Owner Dashboard.
+- Sales progress.
+- Fundraiser progress.
 - Donation totals.
-- QR downloads.
-- Promotional copy generator.
-- Relaunch portal.
-- Duplicate portal.
-- Closed portal archive.
-- Permission tests.
-- Tenant isolation tests.
-- Public/owner data visibility tests.
-- Checkout/idempotency/webhook tests.
-- Backup/monitoring/support procedures.
+- Estimated payout.
+- Order count.
+- QR/share tools.
+- Promotional copy.
+- Final report.
+- Shop reports.
+- Export basics.
 
-This is the first sellable release.
+Exit criteria:
 
-## Release 8: Main SignGuyAI Add-On Integration
+- Store owner sees clean sales/payout information.
+- Shop sees portal performance and revenue.
+- Reports match ledger totals.
 
-Goal: embed the same system into SignGuyAI OS.
+## 10. Release 0.9: Launch Hardening
 
-Deliver:
+Goal: prepare for paying customers.
 
-- Add-ons navigation placement.
-- Main app auth adapter.
-- Customer/contact linking.
-- Doc Library/artwork linking.
-- Canonical Order/Order Item bridge.
-- Financials/reporting bridge.
-- Customer/order timeline activity projection.
-- Main app permission mapping.
+Required:
 
-## Later Advanced Releases
+- Error handling.
+- Empty states.
+- Permission testing.
+- Payment failure handling.
+- Refund handling.
+- Stripe webhook reliability.
+- Activity audit completeness.
+- Owner/buyer privacy testing.
+- Basic support/admin visibility.
+- Closed/relaunch flow.
 
-Delay until the core is stable:
+Exit criteria:
 
-- SMS/MMS.
-- Advanced tax automation.
-- Full inventory.
-- Full production management.
-- Full CRM.
-- Public marketplace.
-- Advanced website/theme builder.
-- Customer-facing product designer.
-- Complex multi-location permissions.
+- Payment/webhook flows survive retries.
+- Launch readiness gate blocks incomplete portals.
+- Store owner/buyer access is scoped correctly.
+- Compliance doc marks preview items vs production items clearly.
+
+## 11. Release 1.0: First Sellable Release
+
+First sellable release must include:
+
+- Checkout.
+- Stripe.
+- Buyer orders.
+- Reporting.
+- Owner Portal.
+- Store Launch Packet.
+- Launch readiness gates.
+- Portal statuses.
+- Activity logs.
+- QR/share links.
+- Promotional copy.
+- AI setup assistance.
+- Product templates.
+- Portal-specific products.
+- Owner approval.
+- Basic hardening.
+
+Do not sell a fake “MVP” missing checkout. That is a brochure with anxiety.
