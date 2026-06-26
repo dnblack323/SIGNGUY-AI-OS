@@ -13,6 +13,7 @@ class FakeOrdersRepository:
         self.items = {}
         self.events = []
         self.snapshots = []
+        self.quote_drafts = []
         self.counter = 0
 
     async def ensure_indexes(self):
@@ -122,6 +123,55 @@ class FakeOrdersRepository:
             rows = [row for row in rows if row["order_item_id"] == item_id]
         return rows
 
+    async def list_quote_drafts(self, tenant_id, order_id):
+        return [deepcopy(row) for row in self.quote_drafts if row["tenant_id"] == tenant_id and row["order_id"] == order_id]
+
+    async def update_quote_draft(self, tenant_id, order_id, quote_id, patch, actor_id=""):
+        for index, quote in enumerate(self.quote_drafts):
+            if quote["tenant_id"] == tenant_id and quote["order_id"] == order_id and quote["id"] == quote_id:
+                updated = {**quote, **patch}
+                subtotal = int(updated.get("subtotal_minor", 0))
+                updated["total_minor"] = max(0, subtotal - int(updated.get("discount_minor", 0) or 0) + int(updated.get("tax_minor", 0) or 0))
+                self.quote_drafts[index] = updated
+                await self.record_event(tenant_id, order_id, "", "quote_draft_updated", metadata={"quote_id": quote_id})
+                return deepcopy(updated)
+        return None
+
+    async def generate_quote_draft(self, tenant_id, order_id, actor_id=""):
+        order = await self.get_order(tenant_id, order_id)
+        if not order:
+            raise LookupError("Order not found")
+        if not order.get("items"):
+            raise ValueError("Add at least one order item before generating a quote")
+        line_items = []
+        total = 0
+        for item in order["items"]:
+            price = int(item.get("estimated_price_minor", 0))
+            total += price
+            line_items.append({"order_item_id": item["id"], "ticket_number": item["ticket_number"], "item_name": item["item_name"], "selling_price_minor": price})
+        quote = {
+            "id": self._id("QUOTE"),
+            "tenant_id": tenant_id,
+            "quote_number": f"Q-{len(self.quote_drafts) + 1:04d}",
+            "order_id": order_id,
+            "customer_id": order.get("customer_id", ""),
+            "customer_name": order.get("customer_name", ""),
+            "status": "draft_internal",
+            "title": f"Quote for {order.get('order_number', order_id)}",
+            "line_items": line_items,
+            "subtotal_minor": total,
+            "discount_minor": 0,
+            "tax_minor": 0,
+            "total_minor": total,
+            "notes": "",
+            "internal_notes": "Generated from current order item pricing snapshots.",
+            "terms": "Quote is valid for 30 days.",
+        }
+        self.quote_drafts.insert(0, quote)
+        await self.record_event(tenant_id, order_id, "", "quote_draft_generated", metadata={"quote_id": quote["id"]})
+        await self.update_order(tenant_id, order_id, {"status": "quote_sent"})
+        return deepcopy(quote)
+
     async def record_event(self, tenant_id, order_id, item_id="", event_type="event", actor_id="", metadata=None):
         event = {"id": self._id("EVT"), "tenant_id": tenant_id, "order_id": order_id, "order_item_id": item_id, "event_type": event_type, "metadata": metadata or {}}
         self.events.insert(0, event)
@@ -205,6 +255,43 @@ class OrdersApiTests(unittest.TestCase):
         self.assertEqual(updated_item["status"], "in_production")
         self.assertTrue(any(row["event_type"] == "order_status_changed" for row in activity))
         self.assertTrue(any(row["event_type"] == "order_item_status_changed" for row in activity))
+
+    def test_generate_quote_draft_from_order_item_pricing(self):
+        order = self.client.post("/api/orders", json={"customer_name": "Apex", "customer_id": "CUST-1"}).json()
+        item = self.client.post(f"/api/orders/{order['id']}/items", json={"item_name": "Banner", "item_category": "banners"}).json()
+        self.client.post(f"/api/job-tickets/{item['id']}/save-pricing", json={"specs": {"width": 4, "height": 8, "unit_of_measure": "feet"}})
+
+        quote = self.client.post(f"/api/orders/{order['id']}/generate-quote").json()
+        quotes = self.client.get(f"/api/orders/{order['id']}/quotes").json()
+        financials = self.client.get(f"/api/orders/{order['id']}/financials").json()
+
+        self.assertEqual(quote["status"], "draft_internal")
+        self.assertEqual(len(quote["line_items"]), 1)
+        self.assertGreater(quote["total_minor"], 0)
+        self.assertEqual(quotes[0]["id"], quote["id"])
+        self.assertEqual(financials["latest_quote_draft"]["id"], quote["id"])
+
+    def test_quote_draft_can_be_edited_without_changing_order_items(self):
+        order = self.client.post("/api/orders", json={"customer_name": "Apex", "customer_id": "CUST-1"}).json()
+        item = self.client.post(f"/api/orders/{order['id']}/items", json={"item_name": "Banner", "item_category": "banners"}).json()
+        self.client.post(f"/api/job-tickets/{item['id']}/save-pricing", json={"specs": {"width": 4, "height": 8, "unit_of_measure": "feet"}})
+        quote = self.client.post(f"/api/orders/{order['id']}/generate-quote").json()
+
+        edited = self.client.put(f"/api/orders/{order['id']}/quotes/{quote['id']}", json={
+            "status": "ready_for_review",
+            "notes": "Customer-facing scope note.",
+            "terms": "50% deposit required.",
+            "discount_minor": 500,
+            "tax_minor": 125,
+        }).json()
+        activity = self.client.get(f"/api/orders/{order['id']}/activity").json()
+        unchanged_item = self.client.get(f"/api/job-tickets/{item['id']}").json()
+
+        self.assertEqual(edited["status"], "ready_for_review")
+        self.assertEqual(edited["notes"], "Customer-facing scope note.")
+        self.assertEqual(edited["total_minor"], quote["subtotal_minor"] - 500 + 125)
+        self.assertGreater(unchanged_item["estimated_price_minor"], 0)
+        self.assertTrue(any(row["event_type"] == "quote_draft_updated" for row in activity))
 
 
 if __name__ == "__main__":

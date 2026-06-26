@@ -572,6 +572,33 @@ h1, h2 { font-family: Manrope, sans-serif; color: #172033; }
 .order-spec-actions button { border: 1px solid #b9d9d6; border-radius: 8px; background: white; color: var(--teal-dark); padding: 9px 11px; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; cursor: pointer; }
 .order-financial-grid, .order-notes-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .order-financial-grid strong { display: block; margin: 5px 0; color: #172033; font: 700 22px Manrope; }
+.order-quote-panel { margin-top: 12px; border: 1px solid #b9d9d6; border-radius: 11px; background: #eef9f7; padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.order-quote-panel span { color: var(--teal-dark); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.order-quote-panel h3 { margin: 3px 0 5px; color: #263246; font-size: 15px; }
+.order-quote-panel p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
+.order-quote-panel button { border: 1px solid #b9d9d6; border-radius: 8px; background: white; color: var(--teal-dark); padding: 10px 12px; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.order-quote-list { margin-top: 10px; display: flex; flex-direction: column; gap: 7px; }
+.order-quote-list article { border: 1px solid #edf0f4; border-radius: 9px; background: #fbfcfd; padding: 10px; display: grid; grid-template-columns: minmax(100px, 1fr) auto auto auto; gap: 10px; align-items: center; cursor: pointer; }
+.order-quote-list article.active, .order-quote-list article:hover { border-color: #9ccbc7; background: #eef9f7; }
+.order-quote-list strong { color: #263246; font-size: 12px; }
+.order-quote-list span, .order-quote-list small { color: var(--muted); font-size: 10px; font-weight: 800; }
+.order-quote-list b { color: var(--teal-dark); font: 700 13px Manrope; }
+.quote-editor { margin-top: 12px; border: 1px solid var(--border); border-radius: 12px; background: white; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.quote-editor-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.quote-editor-header span, .quote-editor-grid span { color: var(--teal-dark); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.quote-editor-header h3 { margin: 3px 0 0; color: #263246; font-size: 17px; }
+.quote-editor-header strong { color: var(--teal-dark); font: 700 22px Manrope; }
+.quote-editor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.quote-editor-grid label { display: flex; flex-direction: column; gap: 5px; }
+.quote-editor-grid input, .quote-editor-grid select, .quote-editor-grid textarea { width: 100%; border: 1px solid var(--border); border-radius: 8px; background: #fbfcfd; color: #172033; padding: 9px; font: inherit; font-size: 12px; outline: 0; }
+.quote-editor-grid textarea { min-height: 72px; resize: vertical; }
+.quote-line-items { display: flex; flex-direction: column; gap: 6px; }
+.quote-line-items p { margin: 0; border: 1px solid #edf0f4; border-radius: 8px; background: #fbfcfd; padding: 9px; display: grid; grid-template-columns: 100px 1fr auto; gap: 9px; align-items: center; }
+.quote-line-items span { color: var(--teal-dark); font-size: 10px; font-weight: 800; }
+.quote-line-items strong { color: #263246; font-size: 12px; }
+.quote-line-items b { color: var(--teal-dark); font: 700 12px Manrope; }
+.quote-editor-actions { display: flex; justify-content: flex-end; }
+.quote-editor-actions button { border: 1px solid #b9d9d6; border-radius: 8px; background: white; color: var(--teal-dark); padding: 9px 11px; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; cursor: pointer; }
 .order-notes-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .orders-file-callout { border: 1px solid #b9d9d6; border-radius: 11px; background: #eef9f7; color: var(--teal-dark); padding: 13px; display: flex; gap: 10px; align-items: flex-start; }
 .orders-file-callout strong { display: block; color: #263246; font-size: 13px; }

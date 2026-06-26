@@ -182,6 +182,16 @@ class PricingCalculatePayload(PreviewEnvelope):
     save_snapshot: bool = False
 
 
+class QuoteDraftPatch(PreviewEnvelope):
+    status: Literal["draft_internal", "ready_for_review", "sent", "approved", "revision_requested", "declined", "archived"] | None = None
+    title: str | None = None
+    notes: str | None = None
+    internal_notes: str | None = None
+    terms: str | None = None
+    discount_minor: int | None = None
+    tax_minor: int | None = None
+
+
 class LinkArtworkPayload(PreviewEnvelope):
     file_id: str
     relationship_type: str = "artwork"

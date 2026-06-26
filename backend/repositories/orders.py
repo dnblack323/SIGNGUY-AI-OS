@@ -11,7 +11,7 @@ except ImportError:
 
 
 class OrdersRepository:
-    collections = ("orders", "order_items", "order_item_specs", "order_item_pricing_snapshots", "order_events")
+    collections = ("orders", "order_items", "order_item_specs", "order_item_pricing_snapshots", "order_events", "quote_drafts")
 
     def __init__(self, database):
         self.database = database
@@ -20,6 +20,7 @@ class OrdersRepository:
         self.specs = database.order_item_specs
         self.snapshots = database.order_item_pricing_snapshots
         self.events = database.order_events
+        self.quote_drafts = database.quote_drafts
 
     async def ensure_indexes(self):
         for collection in self.collections:
@@ -217,6 +218,99 @@ class OrdersRepository:
         query = {"tenant_id": tenant_id, "order_id": order_id, **self._clean({"order_item_id": item_id})}
         return await self.events.find(query, {"_id": 0}).sort("created_at", DESCENDING).to_list(length=500)
 
+    async def list_quote_drafts(self, tenant_id: str, order_id: str) -> list[dict]:
+        return await self.quote_drafts.find({"tenant_id": tenant_id, "order_id": order_id}, {"_id": 0}).sort("created_at", DESCENDING).to_list(length=50)
+
+    async def get_quote_draft(self, tenant_id: str, quote_id: str) -> dict | None:
+        return await self.quote_drafts.find_one({"tenant_id": tenant_id, "id": quote_id}, {"_id": 0})
+
+    async def update_quote_draft(self, tenant_id: str, order_id: str, quote_id: str, patch: dict, actor_id: str = "") -> dict | None:
+        existing = await self.quote_drafts.find_one({"tenant_id": tenant_id, "id": quote_id, "order_id": order_id})
+        if not existing:
+            return None
+        allowed = {"status", "title", "notes", "internal_notes", "terms", "discount_minor", "tax_minor"}
+        patch = {key: value for key, value in patch.items() if key in allowed and value is not None}
+        if "discount_minor" in patch:
+            patch["discount_minor"] = max(0, int(patch["discount_minor"] or 0))
+        if "tax_minor" in patch:
+            patch["tax_minor"] = max(0, int(patch["tax_minor"] or 0))
+        subtotal = int(existing.get("subtotal_minor", 0))
+        discount = int(patch.get("discount_minor", existing.get("discount_minor", 0)) or 0)
+        tax = int(patch.get("tax_minor", existing.get("tax_minor", 0)) or 0)
+        updated = {
+            **existing,
+            **patch,
+            "total_minor": max(0, subtotal - discount + tax),
+            "updated_at": utc_now(),
+            "version": int(existing.get("version", 1)) + 1,
+        }
+        await self.quote_drafts.replace_one({"tenant_id": tenant_id, "id": quote_id, "order_id": order_id}, updated)
+        if patch:
+            await self.record_event(tenant_id, order_id, "", "quote_draft_updated", actor_id, {"quote_id": quote_id, "fields": sorted(patch.keys())})
+        return {key: value for key, value in updated.items() if key != "_id"}
+
+    async def generate_quote_draft(self, tenant_id: str, order_id: str, actor_id: str = "") -> dict:
+        order = await self.get_order(tenant_id, order_id, include_items=True)
+        if not order:
+            raise LookupError("Order not found")
+        items = order.get("items", [])
+        if not items:
+            raise ValueError("Add at least one order item before generating a quote")
+
+        line_items = []
+        subtotal = 0
+        for item in items:
+            snapshot = item.get("latest_pricing_snapshot") or {}
+            calculation = snapshot.get("calculation") or {}
+            unit_total = int(item.get("estimated_price_minor") or calculation.get("selling_price_minor") or 0)
+            subtotal += unit_total
+            line_items.append({
+                "order_item_id": item["id"],
+                "ticket_number": item.get("ticket_number", ""),
+                "item_name": item.get("item_name", ""),
+                "item_category": item.get("item_category", ""),
+                "quantity": item.get("quantity", 1),
+                "unit_type": item.get("unit_type", "each"),
+                "description": item.get("description", ""),
+                "selling_price_minor": unit_total,
+                "material_cost_minor": int(item.get("material_estimate_minor") or calculation.get("material_cost_minor") or 0),
+                "labor_cost_minor": int(item.get("labor_estimate_minor") or calculation.get("labor_cost_minor") or 0),
+                "pricing_snapshot_id": snapshot.get("id", ""),
+                "specs": item.get("specs", {}),
+            })
+
+        now = utc_now()
+        document = {
+            "id": new_id(),
+            "tenant_id": tenant_id,
+            "quote_number": await self._next_quote_number(tenant_id),
+            "order_id": order_id,
+            "order_number": order.get("order_number", ""),
+            "customer_id": order.get("customer_id", ""),
+            "customer_name": order.get("customer_name", ""),
+            "contact_name": order.get("contact_name", ""),
+            "email": order.get("email", ""),
+            "phone": order.get("phone", ""),
+            "status": "draft_internal",
+            "title": order.get("order_title") or f"Quote for {order.get('order_number', 'order')}",
+            "source": "order_snapshot",
+            "line_items": line_items,
+            "subtotal_minor": subtotal,
+            "discount_minor": 0,
+            "tax_minor": 0,
+            "total_minor": subtotal,
+            "notes": order.get("customer_notes", ""),
+            "internal_notes": "Generated from current order item pricing snapshots.",
+            "terms": "Quote is valid for 30 days. Production starts after written approval and required deposit.",
+            "created_at": now,
+            "updated_at": now,
+            "version": 1,
+        }
+        await self.quote_drafts.insert_one(document.copy())
+        await self.record_event(tenant_id, order_id, "", "quote_draft_generated", actor_id, {"quote_id": document["id"], "quote_number": document["quote_number"], "total_minor": subtotal})
+        await self.update_order(tenant_id, order_id, {"status": "quote_sent" if order.get("status") in {"awaiting_quote", "awaiting_review", "new_intake", "draft"} else order.get("status")})
+        return {key: value for key, value in document.items() if key != "_id"}
+
     async def _hydrate_item(self, tenant_id: str, item: dict) -> dict:
         spec = await self.specs.find_one({"tenant_id": tenant_id, "order_item_id": item["id"]}, {"_id": 0})
         snapshots = await self.list_pricing_snapshots(tenant_id, item["id"])
@@ -235,6 +329,10 @@ class OrdersRepository:
     async def _next_ticket_number(self, tenant_id: str, order_id: str, order_number: str) -> str:
         count = await self.items.count_documents({"tenant_id": tenant_id, "order_id": order_id})
         return f"{order_number}-{count + 1:02d}"
+
+    async def _next_quote_number(self, tenant_id: str) -> str:
+        count = await self.quote_drafts.count_documents({"tenant_id": tenant_id})
+        return f"Q-{count + 1:04d}"
 
     def _default_order_name(self, payload: dict, now) -> str:
         customer = payload.get("customer_name") or payload.get("company_name") or "ORDER"

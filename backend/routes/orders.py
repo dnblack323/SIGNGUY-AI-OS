@@ -2,14 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
 try:
     from ..core_runtime import get_database, get_tenant_id
-    from ..models.orders import LinkArtworkPayload, OrderItemPatch, OrderItemPayload, OrderPatch, OrderPayload, PricingCalculatePayload
+    from ..models.orders import LinkArtworkPayload, OrderItemPatch, OrderItemPayload, OrderPatch, OrderPayload, PricingCalculatePayload, QuoteDraftPatch
     from ..repositories.doculink import DocuLinkRepository
     from ..repositories.orders import OrdersRepository
     from ..services.order_schemas import category_schema
     from ..services.pricing_engine import calculate_item_price
 except ImportError:
     from core_runtime import get_database, get_tenant_id
-    from models.orders import LinkArtworkPayload, OrderItemPatch, OrderItemPayload, OrderPatch, OrderPayload, PricingCalculatePayload
+    from models.orders import LinkArtworkPayload, OrderItemPatch, OrderItemPayload, OrderPatch, OrderPayload, PricingCalculatePayload, QuoteDraftPatch
     from repositories.doculink import DocuLinkRepository
     from repositories.orders import OrdersRepository
     from services.order_schemas import category_schema
@@ -112,14 +112,32 @@ async def order_financials(order_id: str, tenant_id: str = Depends(get_tenant_id
     order = await repository().get_order(tenant_id, order_id)
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
+    quote_drafts = await repository().list_quote_drafts(tenant_id, order_id)
     return {
         "order_id": order_id,
         "estimated_total_minor": order.get("estimated_total_minor", 0),
         "payment_status": order.get("payment_status", "unpaid"),
         "item_count": order.get("job_ticket_count", 0),
+        "quote_draft_count": len(quote_drafts),
+        "latest_quote_draft": quote_drafts[0] if quote_drafts else None,
         "invoice_total_minor": 0,
         "balance_due_minor": order.get("estimated_total_minor", 0),
     }
+
+
+@orders_router.get("/{order_id}/quotes")
+async def order_quote_drafts(order_id: str, tenant_id: str = Depends(get_tenant_id)):
+    if not await repository().get_order(tenant_id, order_id, include_items=False):
+        raise HTTPException(status_code=404, detail="Order not found")
+    return await repository().list_quote_drafts(tenant_id, order_id)
+
+
+@orders_router.put("/{order_id}/quotes/{quote_id}")
+async def update_order_quote_draft(order_id: str, quote_id: str, payload: QuoteDraftPatch, tenant_id: str = Depends(get_tenant_id)):
+    updated = await repository().update_quote_draft(tenant_id, order_id, quote_id, payload.model_dump(exclude_none=True))
+    if not updated:
+        raise HTTPException(status_code=404, detail="Quote draft not found")
+    return updated
 
 
 @orders_router.get("/{order_id}/files")
@@ -133,8 +151,15 @@ async def order_upload_placeholder(order_id: str):
 
 
 @orders_router.post("/{order_id}/generate-quote")
-async def generate_quote_placeholder(order_id: str):
-    raise HTTPException(status_code=501, detail="Quote generation will be implemented after the Orders foundation")
+async def generate_quote_placeholder(order_id: str, tenant_id: str = Depends(get_tenant_id)):
+    repo = repository()
+    await repo.ensure_indexes()
+    try:
+        return await repo.generate_quote_draft(tenant_id, order_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @orders_router.post("/{order_id}/generate-invoice")
