@@ -38,6 +38,12 @@ class FakeWrapRepository:
         self.rows[(tenant_id, project_id)] = row
         return deepcopy(row)
 
+    async def append_child(self, tenant_id, project_id, record_type, payload):
+        row = self.rows[(tenant_id, project_id)]
+        row[record_type] = [*row.get(record_type, []), payload]
+        self.rows[(tenant_id, project_id)] = row
+        return deepcopy(payload)
+
     async def delete(self, tenant_id, project_id):
         return self.rows.pop((tenant_id, project_id), None) is not None
 
@@ -88,6 +94,22 @@ class WrapLabApiTests(unittest.TestCase):
         concept = result.json()["mockupStudio"]["concepts"][0]
         self.assertTrue(concept["customerSelected"])
         self.assertEqual(concept["customerComment"], "Use this direction")
+
+    def test_file_upload_appends_compatible_normalized_child_payload(self):
+        payload = {"id": "WRAP-API-4", "businessName": "Apex", "stage": "Intake", "stageIndex": 0}
+        self.client.post("/api/wrap-lab/projects", json=payload)
+        result = self.client.post("/api/wrap-lab/projects/WRAP-API-4/files", json={
+            "name": "before.jpg",
+            "category": "Before photos - Front",
+            "contentType": "image/jpeg",
+            "dataUrl": "data:image/jpeg;base64,test",
+            "customerVisible": True,
+        })
+        self.assertEqual(result.status_code, 201)
+        file_row = result.json()["files"][0]
+        self.assertEqual(file_row["name"], "before.jpg")
+        self.assertIn("uploaded_at", file_row)
+        self.assertIn("date", file_row)
 
 
 if __name__ == "__main__":

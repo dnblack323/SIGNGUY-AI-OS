@@ -55,6 +55,17 @@ INDEX_MANIFEST: dict[str, tuple[IndexSpec, ...]] = {
             name="tenant_id_1_customerId_1",
         ),
     ),
+    "wrap_project_child_records": (
+        TENANT_ID_INDEX,
+        IndexSpec(
+            keys=(("tenant_id", ASCENDING), ("project_id", ASCENDING), ("record_type", ASCENDING), ("position", ASCENDING)),
+            name="tenant_id_1_project_id_1_record_type_1_position_1",
+        ),
+        IndexSpec(
+            keys=(("tenant_id", ASCENDING), ("record_type", ASCENDING), ("updated_at", DESCENDING)),
+            name="tenant_id_1_record_type_1_updated_at_-1",
+        ),
+    ),
     "community_posts": (
         TENANT_ID_INDEX,
         IndexSpec(

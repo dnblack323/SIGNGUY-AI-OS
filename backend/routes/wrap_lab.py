@@ -73,15 +73,14 @@ async def add_file(project_id: str, request: WrapFileUpload, tenant_id: str = De
     project = await repo.get(tenant_id, project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Wrap project not found")
-    files = list(project.get("files", []))
     uploaded_at = utc_now()
-    files.append({
+    await repo.append_child(tenant_id, project_id, "files", {
         **request.model_dump(by_alias=True),
         "id": new_id(),
         "uploaded_at": uploaded_at,
         "date": uploaded_at.date().isoformat(),
     })
-    return await repo.patch(tenant_id, project_id, {"files": files})
+    return await repo.get(tenant_id, project_id)
 
 
 @router.get("/portal/{project_id}")
