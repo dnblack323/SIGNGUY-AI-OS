@@ -13,6 +13,9 @@ export const SHARED_CUSTOMER_SEEDS = [
     tags: ["wrap-customer", "commercial"],
     openOrders: 1,
     lifetimeValue: 3450,
+    notes: "Prefers early morning install windows. Fleet trucks need brand color consistency.",
+    portalEnabled: true,
+    brandProfile: { colors: "Navy, white, safety orange", fonts: "Bold sans serif", voice: "Reliable, fast, professional" },
   },
   {
     id: "CUST-GREEN-ORCHARD",
@@ -26,6 +29,9 @@ export const SHARED_CUSTOMER_SEEDS = [
     tags: ["wrap-customer", "fleet"],
     openOrders: 1,
     lifetimeValue: 5240,
+    notes: "Retail graphics should match seasonal campaign colors and reusable display standards.",
+    portalEnabled: false,
+    brandProfile: { colors: "Forest green, cream", fonts: "Organic serif", voice: "Local, fresh, friendly" },
   },
   {
     id: "CUST-SARAH-JENKINS",
@@ -39,6 +45,9 @@ export const SHARED_CUSTOMER_SEEDS = [
     tags: ["wrap-customer"],
     openOrders: 1,
     lifetimeValue: 3900,
+    notes: "Individual wrap customer. Confirm proof approval by text before production.",
+    portalEnabled: false,
+    brandProfile: { colors: "Black, silver", fonts: "Modern condensed", voice: "Clean, personal, premium" },
   },
 ];
 
@@ -94,4 +103,11 @@ export async function createSharedCustomer(draft, connection, currentCustomers =
   const nextCustomers = [...currentCustomers, created];
   localStorage.setItem("signguyai-shared-customers", JSON.stringify(nextCustomers));
   return created;
+}
+
+export async function updateSharedCustomer(customer, connection, currentCustomers = []) {
+  if (connection === "connected") return api(`/customers/${customer.id}`, { method: "PUT", body: JSON.stringify(customer) });
+  const nextCustomers = currentCustomers.map((row) => row.id === customer.id ? customer : row);
+  localStorage.setItem("signguyai-shared-customers", JSON.stringify(nextCustomers));
+  return customer;
 }
