@@ -573,16 +573,19 @@ h1, h2 { font-family: Manrope, sans-serif; color: #172033; }
 .order-financial-grid, .order-notes-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .order-financial-grid strong { display: block; margin: 5px 0; color: #172033; font: 700 22px Manrope; }
 .order-quote-panel { margin-top: 12px; border: 1px solid #b9d9d6; border-radius: 11px; background: #eef9f7; padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.order-quote-panel.invoice-panel { background: #f8fafc; border-color: var(--border); }
+.order-quote-panel.production-panel { margin-top: 0; background: #f0fdfa; border-color: #99f6e4; }
 .order-quote-panel span { color: var(--teal-dark); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
 .order-quote-panel h3 { margin: 3px 0 5px; color: #263246; font-size: 15px; }
 .order-quote-panel p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
 .order-quote-panel button { border: 1px solid #b9d9d6; border-radius: 8px; background: white; color: var(--teal-dark); padding: 10px 12px; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; cursor: pointer; white-space: nowrap; }
-.order-quote-list { margin-top: 10px; display: flex; flex-direction: column; gap: 7px; }
-.order-quote-list article { border: 1px solid #edf0f4; border-radius: 9px; background: #fbfcfd; padding: 10px; display: grid; grid-template-columns: minmax(100px, 1fr) auto auto auto; gap: 10px; align-items: center; cursor: pointer; }
+.order-quote-list, .order-invoice-list { margin-top: 10px; display: flex; flex-direction: column; gap: 7px; }
+.order-quote-list article, .order-invoice-list article { border: 1px solid #edf0f4; border-radius: 9px; background: #fbfcfd; padding: 10px; display: grid; grid-template-columns: minmax(100px, 1fr) auto auto auto; gap: 10px; align-items: center; cursor: pointer; }
 .order-quote-list article.active, .order-quote-list article:hover { border-color: #9ccbc7; background: #eef9f7; }
-.order-quote-list strong { color: #263246; font-size: 12px; }
-.order-quote-list span, .order-quote-list small { color: var(--muted); font-size: 10px; font-weight: 800; }
-.order-quote-list b { color: var(--teal-dark); font: 700 13px Manrope; }
+.order-invoice-list article:hover { border-color: #cbd5e1; background: #f8fafc; }
+.order-quote-list strong, .order-invoice-list strong { color: #263246; font-size: 12px; }
+.order-quote-list span, .order-quote-list small, .order-invoice-list span, .order-invoice-list small { color: var(--muted); font-size: 10px; font-weight: 800; }
+.order-quote-list b, .order-invoice-list b { color: var(--teal-dark); font: 700 13px Manrope; }
 .quote-editor { margin-top: 12px; border: 1px solid var(--border); border-radius: 12px; background: white; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
 .quote-editor-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
 .quote-editor-header span, .quote-editor-grid span { color: var(--teal-dark); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
@@ -599,6 +602,14 @@ h1, h2 { font-family: Manrope, sans-serif; color: #172033; }
 .quote-line-items b { color: var(--teal-dark); font: 700 12px Manrope; }
 .quote-editor-actions { display: flex; justify-content: flex-end; }
 .quote-editor-actions button { border: 1px solid #b9d9d6; border-radius: 8px; background: white; color: var(--teal-dark); padding: 9px 11px; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; cursor: pointer; }
+.work-order-summary { margin-top: 10px; border: 1px solid #b9d9d6; border-radius: 10px; background: #fbfefe; padding: 11px; display: grid; grid-template-columns: minmax(120px,1fr) auto auto; gap: 10px; align-items: center; }
+.work-order-summary strong { color: #263246; font-size: 13px; }.work-order-summary span { color: var(--muted); font-size: 10px; font-weight: 800; }.work-order-summary b { color: var(--teal-dark); font: 700 13px Manrope; }
+.work-order-list { margin-top: 10px; display: flex; flex-direction: column; gap: 9px; }
+.work-order-list article { border: 1px solid var(--border); border-radius: 11px; background: white; padding: 12px; display: flex; flex-direction: column; gap: 7px; }
+.work-order-list article > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.work-order-list article > div strong { color: #263246; font-size: 13px; }.work-order-list article > div span { color: var(--muted); font-size: 10px; font-weight: 800; }
+.work-order-list p { margin: 0; border: 1px solid #edf0f4; border-radius: 8px; background: #fbfcfd; padding: 9px; display: grid; grid-template-columns: 100px 1fr auto; gap: 9px; align-items: center; }
+.work-order-list p span { color: var(--teal-dark); font-size: 10px; font-weight: 800; }.work-order-list p strong { color: #263246; font-size: 12px; }.work-order-list p small { color: var(--muted); font-size: 10px; font-weight: 800; }
 .order-notes-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .orders-file-callout { border: 1px solid #b9d9d6; border-radius: 11px; background: #eef9f7; color: var(--teal-dark); padding: 13px; display: flex; gap: 10px; align-items: flex-start; }
 .orders-file-callout strong { display: block; color: #263246; font-size: 13px; }

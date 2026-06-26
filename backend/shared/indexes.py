@@ -178,6 +178,19 @@ INDEX_MANIFEST: dict[str, tuple[IndexSpec, ...]] = {
         IndexSpec(keys=(("tenant_id", ASCENDING), ("customer_id", ASCENDING)), name="tenant_id_1_customer_id_1"),
         IndexSpec(keys=(("tenant_id", ASCENDING), ("status", ASCENDING), ("created_at", DESCENDING)), name="tenant_id_1_status_1_created_at_-1"),
     ),
+    "invoice_drafts": (
+        TENANT_ID_INDEX,
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("invoice_number", ASCENDING)), name="tenant_id_1_invoice_number_1_unique", unique=True),
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("order_id", ASCENDING), ("created_at", DESCENDING)), name="tenant_id_1_order_id_1_created_at_-1"),
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("customer_id", ASCENDING)), name="tenant_id_1_customer_id_1"),
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("status", ASCENDING), ("created_at", DESCENDING)), name="tenant_id_1_status_1_created_at_-1"),
+    ),
+    "work_order_drafts": (
+        TENANT_ID_INDEX,
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("work_order_number", ASCENDING)), name="tenant_id_1_work_order_number_1_unique", unique=True),
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("order_id", ASCENDING), ("created_at", DESCENDING)), name="tenant_id_1_order_id_1_created_at_-1"),
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("status", ASCENDING), ("created_at", DESCENDING)), name="tenant_id_1_status_1_created_at_-1"),
+    ),
     "community_posts": (
         TENANT_ID_INDEX,
         IndexSpec(

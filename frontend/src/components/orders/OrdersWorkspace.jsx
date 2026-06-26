@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Activity, Calculator, ChevronRight, FilePlus2, FileText, FolderOpen, Link, PackagePlus, Plus, Save, Search, ShoppingBag, Upload, UserRound } from "lucide-react";
+import { Activity, Calculator, ChevronRight, FilePlus2, FileText, FolderOpen, Link, PackagePlus, Plus, ReceiptText, Save, Search, ShoppingBag, Upload, UserRound } from "lucide-react";
 import { customerDisplayName, loadSharedCustomers } from "../customers/customerCore";
 import { api } from "../../lib/api";
 
@@ -22,6 +22,8 @@ export function OrdersWorkspace({ onToast, onNavigate }) {
   const [activity, setActivity] = useState([]);
   const [files, setFiles] = useState({ file_links: [], document_links: [] });
   const [quoteDrafts, setQuoteDrafts] = useState([]);
+  const [invoiceDrafts, setInvoiceDrafts] = useState([]);
+  const [workOrderDrafts, setWorkOrderDrafts] = useState([]);
   const [filters, setFilters] = useState({ query: "", status: "" });
   const [orderDraft, setOrderDraft] = useState(emptyOrderDraft);
   const [itemDraft, setItemDraft] = useState(emptyItemDraft);
@@ -40,6 +42,8 @@ export function OrdersWorkspace({ onToast, onNavigate }) {
     setOrders((current) => current.map((row) => row.id === order.id ? { ...row, ...order, items: undefined } : row));
     api(`/orders/${orderId}/activity`).then(setActivity).catch(() => {});
     api(`/orders/${orderId}/quotes`).then(setQuoteDrafts).catch(() => {});
+    api(`/orders/${orderId}/invoices`).then(setInvoiceDrafts).catch(() => {});
+    api(`/orders/${orderId}/work-orders`).then(setWorkOrderDrafts).catch(() => {});
   };
 
   useEffect(() => {
@@ -56,8 +60,8 @@ export function OrdersWorkspace({ onToast, onNavigate }) {
     const order = await api(`/orders/${orderId}`);
     setActiveOrder(order);
     setActiveTab("Order Items");
-    Promise.all([api(`/orders/${orderId}/activity`), api(`/orders/${orderId}/files`), api(`/orders/${orderId}/quotes`)])
-      .then(([activityRows, fileRows, quoteRows]) => { setActivity(activityRows); setFiles(fileRows); setQuoteDrafts(quoteRows); })
+    Promise.all([api(`/orders/${orderId}/activity`), api(`/orders/${orderId}/files`), api(`/orders/${orderId}/quotes`), api(`/orders/${orderId}/invoices`), api(`/orders/${orderId}/work-orders`)])
+      .then(([activityRows, fileRows, quoteRows, invoiceRows, workOrderRows]) => { setActivity(activityRows); setFiles(fileRows); setQuoteDrafts(quoteRows); setInvoiceDrafts(invoiceRows); setWorkOrderDrafts(workOrderRows); })
       .catch(() => {});
   };
 
@@ -163,6 +167,30 @@ export function OrdersWorkspace({ onToast, onNavigate }) {
     onToast?.(`Quote draft ${updated.quote_number} saved`);
   };
 
+  const generateInvoiceDraft = async () => {
+    if (!activeOrder) return;
+    try {
+      const invoice = await api(`/orders/${activeOrder.id}/generate-invoice`, { method: "POST" });
+      setInvoiceDrafts(await api(`/orders/${activeOrder.id}/invoices`));
+      api(`/orders/${activeOrder.id}/activity`).then(setActivity).catch(() => {});
+      onToast?.(`Invoice draft ${invoice.invoice_number} generated`);
+    } catch (error) {
+      onToast?.(error.message || "Unable to generate invoice draft");
+    }
+  };
+
+  const generateWorkOrderDraft = async () => {
+    if (!activeOrder) return;
+    try {
+      const workOrder = await api(`/orders/${activeOrder.id}/generate-work_order`, { method: "POST" });
+      setWorkOrderDrafts(await api(`/orders/${activeOrder.id}/work-orders`));
+      await refreshOrder();
+      onToast?.(`Work order draft ${workOrder.work_order_number} generated`);
+    } catch (error) {
+      onToast?.(error.message || "Unable to generate work order draft");
+    }
+  };
+
   return (
     <div className="orders-workspace">
       <section className="orders-hero">
@@ -198,8 +226,8 @@ export function OrdersWorkspace({ onToast, onNavigate }) {
             </header>
             <nav className="order-detail-tabs">{detailTabs.map((tab) => <button key={tab} className={activeTab === tab ? "active" : ""} onClick={() => setActiveTab(tab)}>{tab}</button>)}</nav>
             {activeTab === "Order Items" && <OrderItemsTab order={activeOrder} draft={itemDraft} setDraft={setItemDraft} createItem={createItem} saveItemSpecs={saveItemSpecs} calculateItem={calculateItem} updateItemStatus={updateItemStatus} />}
-            {activeTab === "Production" && <Placeholder icon={PackagePlus} title="Production task foundation next" text="Production tasks will be generated from item category workflow templates in the next phase." />}
-            {activeTab === "Financial" && <FinancialTab order={activeOrder} quoteDrafts={quoteDrafts} generateQuoteDraft={generateQuoteDraft} saveQuoteDraft={saveQuoteDraft} />}
+            {activeTab === "Production" && <ProductionTab workOrderDrafts={workOrderDrafts} generateWorkOrderDraft={generateWorkOrderDraft} />}
+            {activeTab === "Financial" && <FinancialTab order={activeOrder} quoteDrafts={quoteDrafts} invoiceDrafts={invoiceDrafts} generateQuoteDraft={generateQuoteDraft} saveQuoteDraft={saveQuoteDraft} generateInvoiceDraft={generateInvoiceDraft} />}
             {activeTab === "Drawings" && <Placeholder icon={FileText} title="Drawings use DocuLink" text="Order drawings and markups will be linked through DocuLink file/document IDs." />}
             {activeTab === "Files" && <FilesTab order={activeOrder} files={files} uploadOrderFile={uploadOrderFile} onOpenDocuLink={() => onNavigate?.("operations", "documents")} />}
             {activeTab === "Notes" && <NotesTab order={activeOrder} />}
@@ -256,8 +284,24 @@ function OrderItemCard({ item, saveItemSpecs, calculateItem, updateItemStatus })
   </article>;
 }
 
-function FinancialTab({ order, quoteDrafts, generateQuoteDraft, saveQuoteDraft }) {
+function ProductionTab({ workOrderDrafts, generateWorkOrderDraft }) {
+  const latest = workOrderDrafts[0];
+  return <section className="order-tab-panel">
+    <div className="order-quote-panel production-panel">
+      <div><span>Work Order Drafts</span><h3>Snapshot job tickets for production</h3><p>This creates a production handoff from current Order Items. The full production board can later consume these tasks without reusing quote or invoice records.</p></div>
+      <button onClick={generateWorkOrderDraft}><PackagePlus size={15} />Generate Work Order Draft</button>
+    </div>
+    {latest && <div className="work-order-summary"><strong>{latest.work_order_number}</strong><span>{label(latest.status)}</span><b>{latest.item_count || latest.production_items?.length || 0} production items</b></div>}
+    <div className="work-order-list">
+      {workOrderDrafts.map((workOrder) => <article key={workOrder.id}><div><strong>{workOrder.work_order_number}</strong><span>{label(workOrder.status)}</span></div>{(workOrder.production_items || []).map((item) => <p key={item.order_item_id}><span>{item.ticket_number}</span><strong>{item.item_name}</strong><small>{item.tasks?.length || 0} tasks</small></p>)}</article>)}
+    </div>
+    {!workOrderDrafts.length && <Empty icon={PackagePlus} title="No work order drafts yet" text="Generate a draft when the order is ready to hand off to production." />}
+  </section>;
+}
+
+function FinancialTab({ order, quoteDrafts, invoiceDrafts, generateQuoteDraft, saveQuoteDraft, generateInvoiceDraft }) {
   const latest = quoteDrafts[0];
+  const latestInvoice = invoiceDrafts[0];
   const [selectedId, setSelectedId] = useState("");
   const selected = quoteDrafts.find((quote) => quote.id === selectedId) || latest;
 
@@ -274,6 +318,13 @@ function FinancialTab({ order, quoteDrafts, generateQuoteDraft, saveQuoteDraft }
     <div className="order-quote-panel">
       <div><span>Internal Quote Drafts</span><h3>Snapshot current order pricing</h3><p>This creates an internal quote draft from current Job Ticket prices. Customer approval, revision, signing, and sending will come with the full Quotes module.</p></div>
       <button onClick={generateQuoteDraft}><FilePlus2 size={15} />Generate Quote Draft</button>
+    </div>
+    <div className="order-quote-panel invoice-panel">
+      <div><span>Invoice Drafts</span><h3>Create billing draft</h3><p>Uses the approved quote draft when available. Otherwise it snapshots current order item pricing for internal billing review.</p></div>
+      <button onClick={generateInvoiceDraft}><ReceiptText size={15} />Generate Invoice Draft</button>
+    </div>
+    <div className="order-invoice-list">
+      {invoiceDrafts.map((invoice) => <article key={invoice.id}><strong>{invoice.invoice_number}</strong><span>{label(invoice.status)}</span><b>{money(invoice.total_minor)}</b><small>{invoice.source === "quote_draft" ? "From quote" : "From order"}</small></article>)}
     </div>
     <div className="order-quote-list">
       {quoteDrafts.map((quote) => <article key={quote.id} className={selected?.id === quote.id ? "active" : ""} onClick={() => setSelectedId(quote.id)}><strong>{quote.quote_number}</strong><span>{label(quote.status)}</span><b>{money(quote.total_minor)}</b><small>{quote.line_items?.length || 0} line items</small></article>)}

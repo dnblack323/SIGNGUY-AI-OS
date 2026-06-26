@@ -11,7 +11,7 @@ except ImportError:
 
 
 class OrdersRepository:
-    collections = ("orders", "order_items", "order_item_specs", "order_item_pricing_snapshots", "order_events", "quote_drafts")
+    collections = ("orders", "order_items", "order_item_specs", "order_item_pricing_snapshots", "order_events", "quote_drafts", "invoice_drafts", "work_order_drafts")
 
     def __init__(self, database):
         self.database = database
@@ -21,6 +21,8 @@ class OrdersRepository:
         self.snapshots = database.order_item_pricing_snapshots
         self.events = database.order_events
         self.quote_drafts = database.quote_drafts
+        self.invoice_drafts = database.invoice_drafts
+        self.work_order_drafts = database.work_order_drafts
 
     async def ensure_indexes(self):
         for collection in self.collections:
@@ -221,6 +223,12 @@ class OrdersRepository:
     async def list_quote_drafts(self, tenant_id: str, order_id: str) -> list[dict]:
         return await self.quote_drafts.find({"tenant_id": tenant_id, "order_id": order_id}, {"_id": 0}).sort("created_at", DESCENDING).to_list(length=50)
 
+    async def list_invoice_drafts(self, tenant_id: str, order_id: str) -> list[dict]:
+        return await self.invoice_drafts.find({"tenant_id": tenant_id, "order_id": order_id}, {"_id": 0}).sort("created_at", DESCENDING).to_list(length=50)
+
+    async def list_work_order_drafts(self, tenant_id: str, order_id: str) -> list[dict]:
+        return await self.work_order_drafts.find({"tenant_id": tenant_id, "order_id": order_id}, {"_id": 0}).sort("created_at", DESCENDING).to_list(length=50)
+
     async def get_quote_draft(self, tenant_id: str, quote_id: str) -> dict | None:
         return await self.quote_drafts.find_one({"tenant_id": tenant_id, "id": quote_id}, {"_id": 0})
 
@@ -311,6 +319,131 @@ class OrdersRepository:
         await self.update_order(tenant_id, order_id, {"status": "quote_sent" if order.get("status") in {"awaiting_quote", "awaiting_review", "new_intake", "draft"} else order.get("status")})
         return {key: value for key, value in document.items() if key != "_id"}
 
+    async def generate_invoice_draft(self, tenant_id: str, order_id: str, actor_id: str = "") -> dict:
+        order = await self.get_order(tenant_id, order_id, include_items=True)
+        if not order:
+            raise LookupError("Order not found")
+
+        quote_drafts = await self.list_quote_drafts(tenant_id, order_id)
+        source_quote = next((quote for quote in quote_drafts if quote.get("status") == "approved"), quote_drafts[0] if quote_drafts else None)
+        if source_quote:
+            line_items = [{
+                "source_quote_line": item.get("order_item_id", ""),
+                "ticket_number": item.get("ticket_number", ""),
+                "description": item.get("item_name", ""),
+                "quantity": item.get("quantity", 1),
+                "amount_minor": int(item.get("selling_price_minor", 0) or 0),
+            } for item in source_quote.get("line_items", [])]
+            subtotal = int(source_quote.get("subtotal_minor", 0) or 0)
+            discount = int(source_quote.get("discount_minor", 0) or 0)
+            tax = int(source_quote.get("tax_minor", 0) or 0)
+            total = int(source_quote.get("total_minor", 0) or 0)
+            source_type = "quote_draft"
+            source_quote_id = source_quote.get("id", "")
+        else:
+            items = order.get("items", [])
+            if not items:
+                raise ValueError("Add at least one order item before generating an invoice")
+            line_items = [{
+                "order_item_id": item["id"],
+                "ticket_number": item.get("ticket_number", ""),
+                "description": item.get("item_name", ""),
+                "quantity": item.get("quantity", 1),
+                "amount_minor": int(item.get("estimated_price_minor", 0) or 0),
+            } for item in items]
+            subtotal = sum(int(item.get("amount_minor", 0)) for item in line_items)
+            discount = 0
+            tax = 0
+            total = subtotal
+            source_type = "order_snapshot"
+            source_quote_id = ""
+
+        now = utc_now()
+        document = {
+            "id": new_id(),
+            "tenant_id": tenant_id,
+            "invoice_number": await self._next_invoice_number(tenant_id),
+            "order_id": order_id,
+            "order_number": order.get("order_number", ""),
+            "quote_draft_id": source_quote_id,
+            "customer_id": order.get("customer_id", ""),
+            "customer_name": order.get("customer_name", ""),
+            "contact_name": order.get("contact_name", ""),
+            "email": order.get("email", ""),
+            "phone": order.get("phone", ""),
+            "status": "draft_unpaid",
+            "source": source_type,
+            "line_items": line_items,
+            "subtotal_minor": subtotal,
+            "discount_minor": discount,
+            "tax_minor": tax,
+            "total_minor": total,
+            "amount_paid_minor": 0,
+            "balance_due_minor": total,
+            "payment_terms": "Due on receipt unless otherwise agreed.",
+            "created_at": now,
+            "updated_at": now,
+            "version": 1,
+        }
+        await self.invoice_drafts.insert_one(document.copy())
+        await self.record_event(tenant_id, order_id, "", "invoice_draft_generated", actor_id, {"invoice_id": document["id"], "invoice_number": document["invoice_number"], "total_minor": total})
+        return {key: value for key, value in document.items() if key != "_id"}
+
+    async def generate_work_order_draft(self, tenant_id: str, order_id: str, actor_id: str = "") -> dict:
+        order = await self.get_order(tenant_id, order_id, include_items=True)
+        if not order:
+            raise LookupError("Order not found")
+        items = order.get("items", [])
+        if not items:
+            raise ValueError("Add at least one order item before generating a work order")
+
+        now = utc_now()
+        production_items = []
+        for position, item in enumerate(items, start=1):
+            production_items.append({
+                "order_item_id": item["id"],
+                "ticket_number": item.get("ticket_number", ""),
+                "item_name": item.get("item_name", ""),
+                "item_category": item.get("item_category", ""),
+                "quantity": item.get("quantity", 1),
+                "status": item.get("status", "new"),
+                "priority": item.get("priority", "normal"),
+                "department_route": item.get("department_route", ""),
+                "assigned_team": item.get("assigned_team", ""),
+                "due_date": item.get("due_date"),
+                "production_notes": item.get("production_notes", ""),
+                "install_notes": item.get("install_notes", ""),
+                "special_instructions": item.get("special_instructions", ""),
+                "specs": item.get("specs", {}),
+                "step_order": position,
+                "tasks": self._default_production_tasks(item),
+            })
+
+        document = {
+            "id": new_id(),
+            "tenant_id": tenant_id,
+            "work_order_number": await self._next_work_order_number(tenant_id),
+            "order_id": order_id,
+            "order_number": order.get("order_number", ""),
+            "customer_id": order.get("customer_id", ""),
+            "customer_name": order.get("customer_name", ""),
+            "status": "draft",
+            "source": "order_items_snapshot",
+            "production_items": production_items,
+            "item_count": len(production_items),
+            "shared_production_notes": order.get("shared_production_notes", ""),
+            "shared_design_notes": order.get("shared_design_notes", ""),
+            "shared_install_notes": order.get("shared_install_notes", ""),
+            "shared_color_brand_notes": order.get("shared_color_brand_notes", ""),
+            "created_at": now,
+            "updated_at": now,
+            "version": 1,
+        }
+        await self.work_order_drafts.insert_one(document.copy())
+        await self.record_event(tenant_id, order_id, "", "work_order_draft_generated", actor_id, {"work_order_id": document["id"], "work_order_number": document["work_order_number"], "item_count": len(production_items)})
+        await self.update_order(tenant_id, order_id, {"status": "in_production" if order.get("status") in {"approved", "awaiting_approval", "quote_sent"} else order.get("status")})
+        return {key: value for key, value in document.items() if key != "_id"}
+
     async def _hydrate_item(self, tenant_id: str, item: dict) -> dict:
         spec = await self.specs.find_one({"tenant_id": tenant_id, "order_item_id": item["id"]}, {"_id": 0})
         snapshots = await self.list_pricing_snapshots(tenant_id, item["id"])
@@ -333,6 +466,25 @@ class OrdersRepository:
     async def _next_quote_number(self, tenant_id: str) -> str:
         count = await self.quote_drafts.count_documents({"tenant_id": tenant_id})
         return f"Q-{count + 1:04d}"
+
+    async def _next_invoice_number(self, tenant_id: str) -> str:
+        count = await self.invoice_drafts.count_documents({"tenant_id": tenant_id})
+        return f"INV-{count + 1:04d}"
+
+    async def _next_work_order_number(self, tenant_id: str) -> str:
+        count = await self.work_order_drafts.count_documents({"tenant_id": tenant_id})
+        return f"WO-{count + 1:04d}"
+
+    def _default_production_tasks(self, item: dict) -> list[dict]:
+        category = item.get("item_category", "custom")
+        base = ["review_specs", "prep_artwork", "produce", "quality_check", "pack_or_stage"]
+        if category == "vehicle_wrap":
+            base = ["review_vehicle_specs", "pre_install_inspection", "print_laminate_panels", "install_wrap", "post_install_qc"]
+        elif category in {"banners", "rigid_signs", "digital_print"}:
+            base = ["review_specs", "preflight_artwork", "print_or_fabricate", "finish_edges_or_mount", "quality_check"]
+        elif category == "apparel":
+            base = ["review_sizes", "prep_decoration_files", "decorate_apparel", "quality_check", "pack"]
+        return [{"task_key": task, "status": "not_started"} for task in base]
 
     def _default_order_name(self, payload: dict, now) -> str:
         customer = payload.get("customer_name") or payload.get("company_name") or "ORDER"

@@ -98,12 +98,15 @@ async def production_summary(order_id: str, tenant_id: str = Depends(get_tenant_
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     items = order.get("items", [])
+    work_orders = await repository().list_work_order_drafts(tenant_id, order_id)
     return {
         "order_id": order_id,
         "item_count": len(items),
         "completed_items": sum(1 for item in items if item.get("status") == "completed"),
         "overall_progress": order.get("overall_progress", 0),
         "status_counts": {status: sum(1 for item in items if item.get("status") == status) for status in sorted({item.get("status") for item in items})},
+        "work_order_draft_count": len(work_orders),
+        "latest_work_order_draft": work_orders[0] if work_orders else None,
     }
 
 
@@ -113,6 +116,7 @@ async def order_financials(order_id: str, tenant_id: str = Depends(get_tenant_id
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     quote_drafts = await repository().list_quote_drafts(tenant_id, order_id)
+    invoice_drafts = await repository().list_invoice_drafts(tenant_id, order_id)
     return {
         "order_id": order_id,
         "estimated_total_minor": order.get("estimated_total_minor", 0),
@@ -120,8 +124,10 @@ async def order_financials(order_id: str, tenant_id: str = Depends(get_tenant_id
         "item_count": order.get("job_ticket_count", 0),
         "quote_draft_count": len(quote_drafts),
         "latest_quote_draft": quote_drafts[0] if quote_drafts else None,
-        "invoice_total_minor": 0,
-        "balance_due_minor": order.get("estimated_total_minor", 0),
+        "invoice_draft_count": len(invoice_drafts),
+        "latest_invoice_draft": invoice_drafts[0] if invoice_drafts else None,
+        "invoice_total_minor": invoice_drafts[0].get("total_minor", 0) if invoice_drafts else 0,
+        "balance_due_minor": invoice_drafts[0].get("balance_due_minor", order.get("estimated_total_minor", 0)) if invoice_drafts else order.get("estimated_total_minor", 0),
     }
 
 
@@ -138,6 +144,20 @@ async def update_order_quote_draft(order_id: str, quote_id: str, payload: QuoteD
     if not updated:
         raise HTTPException(status_code=404, detail="Quote draft not found")
     return updated
+
+
+@orders_router.get("/{order_id}/invoices")
+async def order_invoice_drafts(order_id: str, tenant_id: str = Depends(get_tenant_id)):
+    if not await repository().get_order(tenant_id, order_id, include_items=False):
+        raise HTTPException(status_code=404, detail="Order not found")
+    return await repository().list_invoice_drafts(tenant_id, order_id)
+
+
+@orders_router.get("/{order_id}/work-orders")
+async def order_work_order_drafts(order_id: str, tenant_id: str = Depends(get_tenant_id)):
+    if not await repository().get_order(tenant_id, order_id, include_items=False):
+        raise HTTPException(status_code=404, detail="Order not found")
+    return await repository().list_work_order_drafts(tenant_id, order_id)
 
 
 @orders_router.get("/{order_id}/files")
@@ -163,13 +183,27 @@ async def generate_quote_placeholder(order_id: str, tenant_id: str = Depends(get
 
 
 @orders_router.post("/{order_id}/generate-invoice")
-async def generate_invoice_placeholder(order_id: str):
-    raise HTTPException(status_code=501, detail="Invoice generation will be implemented after the Orders foundation")
+async def generate_invoice_placeholder(order_id: str, tenant_id: str = Depends(get_tenant_id)):
+    repo = repository()
+    await repo.ensure_indexes()
+    try:
+        return await repo.generate_invoice_draft(tenant_id, order_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @orders_router.post("/{order_id}/generate-work_order")
-async def generate_work_order_placeholder(order_id: str):
-    raise HTTPException(status_code=501, detail="Work order PDF generation will be implemented after the Orders foundation")
+async def generate_work_order_placeholder(order_id: str, tenant_id: str = Depends(get_tenant_id)):
+    repo = repository()
+    await repo.ensure_indexes()
+    try:
+        return await repo.generate_work_order_draft(tenant_id, order_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @orders_router.post("/{order_id}/start-production")

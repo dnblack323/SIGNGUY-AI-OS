@@ -14,6 +14,8 @@ class FakeOrdersRepository:
         self.events = []
         self.snapshots = []
         self.quote_drafts = []
+        self.invoice_drafts = []
+        self.work_order_drafts = []
         self.counter = 0
 
     async def ensure_indexes(self):
@@ -126,6 +128,12 @@ class FakeOrdersRepository:
     async def list_quote_drafts(self, tenant_id, order_id):
         return [deepcopy(row) for row in self.quote_drafts if row["tenant_id"] == tenant_id and row["order_id"] == order_id]
 
+    async def list_invoice_drafts(self, tenant_id, order_id):
+        return [deepcopy(row) for row in self.invoice_drafts if row["tenant_id"] == tenant_id and row["order_id"] == order_id]
+
+    async def list_work_order_drafts(self, tenant_id, order_id):
+        return [deepcopy(row) for row in self.work_order_drafts if row["tenant_id"] == tenant_id and row["order_id"] == order_id]
+
     async def update_quote_draft(self, tenant_id, order_id, quote_id, patch, actor_id=""):
         for index, quote in enumerate(self.quote_drafts):
             if quote["tenant_id"] == tenant_id and quote["order_id"] == order_id and quote["id"] == quote_id:
@@ -171,6 +179,75 @@ class FakeOrdersRepository:
         await self.record_event(tenant_id, order_id, "", "quote_draft_generated", metadata={"quote_id": quote["id"]})
         await self.update_order(tenant_id, order_id, {"status": "quote_sent"})
         return deepcopy(quote)
+
+    async def generate_invoice_draft(self, tenant_id, order_id, actor_id=""):
+        order = await self.get_order(tenant_id, order_id)
+        if not order:
+            raise LookupError("Order not found")
+        quote = next((row for row in self.quote_drafts if row["tenant_id"] == tenant_id and row["order_id"] == order_id and row.get("status") == "approved"), None)
+        if quote:
+            line_items = [{"description": item["item_name"], "amount_minor": item["selling_price_minor"]} for item in quote["line_items"]]
+            total = quote["total_minor"]
+            source = "quote_draft"
+            quote_id = quote["id"]
+        else:
+            if not order.get("items"):
+                raise ValueError("Add at least one order item before generating an invoice")
+            line_items = [{"description": item["item_name"], "amount_minor": int(item.get("estimated_price_minor", 0))} for item in order["items"]]
+            total = sum(item["amount_minor"] for item in line_items)
+            source = "order_snapshot"
+            quote_id = ""
+        invoice = {
+            "id": self._id("INV"),
+            "tenant_id": tenant_id,
+            "invoice_number": f"INV-{len(self.invoice_drafts) + 1:04d}",
+            "order_id": order_id,
+            "quote_draft_id": quote_id,
+            "customer_id": order.get("customer_id", ""),
+            "customer_name": order.get("customer_name", ""),
+            "status": "draft_unpaid",
+            "source": source,
+            "line_items": line_items,
+            "subtotal_minor": total,
+            "discount_minor": 0,
+            "tax_minor": 0,
+            "total_minor": total,
+            "amount_paid_minor": 0,
+            "balance_due_minor": total,
+        }
+        self.invoice_drafts.insert(0, invoice)
+        await self.record_event(tenant_id, order_id, "", "invoice_draft_generated", metadata={"invoice_id": invoice["id"]})
+        return deepcopy(invoice)
+
+    async def generate_work_order_draft(self, tenant_id, order_id, actor_id=""):
+        order = await self.get_order(tenant_id, order_id)
+        if not order:
+            raise LookupError("Order not found")
+        if not order.get("items"):
+            raise ValueError("Add at least one order item before generating a work order")
+        production_items = [{
+            "order_item_id": item["id"],
+            "ticket_number": item["ticket_number"],
+            "item_name": item["item_name"],
+            "item_category": item.get("item_category", "custom"),
+            "tasks": [{"task_key": "review_specs", "status": "not_started"}, {"task_key": "produce", "status": "not_started"}, {"task_key": "quality_check", "status": "not_started"}],
+        } for item in order["items"]]
+        work_order = {
+            "id": self._id("WO"),
+            "tenant_id": tenant_id,
+            "work_order_number": f"WO-{len(self.work_order_drafts) + 1:04d}",
+            "order_id": order_id,
+            "customer_id": order.get("customer_id", ""),
+            "customer_name": order.get("customer_name", ""),
+            "status": "draft",
+            "source": "order_items_snapshot",
+            "production_items": production_items,
+            "item_count": len(production_items),
+        }
+        self.work_order_drafts.insert(0, work_order)
+        await self.record_event(tenant_id, order_id, "", "work_order_draft_generated", metadata={"work_order_id": work_order["id"]})
+        await self.update_order(tenant_id, order_id, {"status": "in_production"})
+        return deepcopy(work_order)
 
     async def record_event(self, tenant_id, order_id, item_id="", event_type="event", actor_id="", metadata=None):
         event = {"id": self._id("EVT"), "tenant_id": tenant_id, "order_id": order_id, "order_item_id": item_id, "event_type": event_type, "metadata": metadata or {}}
@@ -292,6 +369,44 @@ class OrdersApiTests(unittest.TestCase):
         self.assertEqual(edited["total_minor"], quote["subtotal_minor"] - 500 + 125)
         self.assertGreater(unchanged_item["estimated_price_minor"], 0)
         self.assertTrue(any(row["event_type"] == "quote_draft_updated" for row in activity))
+
+    def test_generate_invoice_draft_from_approved_quote(self):
+        order = self.client.post("/api/orders", json={"customer_name": "Apex", "customer_id": "CUST-1"}).json()
+        item = self.client.post(f"/api/orders/{order['id']}/items", json={"item_name": "Banner", "item_category": "banners"}).json()
+        self.client.post(f"/api/job-tickets/{item['id']}/save-pricing", json={"specs": {"width": 4, "height": 8, "unit_of_measure": "feet"}})
+        quote = self.client.post(f"/api/orders/{order['id']}/generate-quote").json()
+        approved = self.client.put(f"/api/orders/{order['id']}/quotes/{quote['id']}", json={"status": "approved", "discount_minor": 250}).json()
+
+        invoice = self.client.post(f"/api/orders/{order['id']}/generate-invoice").json()
+        invoices = self.client.get(f"/api/orders/{order['id']}/invoices").json()
+        financials = self.client.get(f"/api/orders/{order['id']}/financials").json()
+        activity = self.client.get(f"/api/orders/{order['id']}/activity").json()
+
+        self.assertEqual(invoice["source"], "quote_draft")
+        self.assertEqual(invoice["quote_draft_id"], approved["id"])
+        self.assertEqual(invoice["total_minor"], approved["total_minor"])
+        self.assertEqual(invoices[0]["id"], invoice["id"])
+        self.assertEqual(financials["latest_invoice_draft"]["id"], invoice["id"])
+        self.assertTrue(any(row["event_type"] == "invoice_draft_generated" for row in activity))
+
+    def test_generate_work_order_draft_from_order_items(self):
+        order = self.client.post("/api/orders", json={"customer_name": "Apex", "customer_id": "CUST-1", "status": "approved"}).json()
+        self.client.post(f"/api/orders/{order['id']}/items", json={"item_name": "Banner", "item_category": "banners"}).json()
+        self.client.post(f"/api/orders/{order['id']}/items", json={"item_name": "Install", "item_category": "services"}).json()
+
+        work_order = self.client.post(f"/api/orders/{order['id']}/generate-work_order").json()
+        work_orders = self.client.get(f"/api/orders/{order['id']}/work-orders").json()
+        production = self.client.get(f"/api/orders/{order['id']}/production-summary").json()
+        updated_order = self.client.get(f"/api/orders/{order['id']}").json()
+        activity = self.client.get(f"/api/orders/{order['id']}/activity").json()
+
+        self.assertEqual(work_order["status"], "draft")
+        self.assertEqual(work_order["item_count"], 2)
+        self.assertTrue(all(row["tasks"] for row in work_order["production_items"]))
+        self.assertEqual(work_orders[0]["id"], work_order["id"])
+        self.assertEqual(production["latest_work_order_draft"]["id"], work_order["id"])
+        self.assertEqual(updated_order["status"], "in_production")
+        self.assertTrue(any(row["event_type"] == "work_order_draft_generated" for row in activity))
 
 
 if __name__ == "__main__":
