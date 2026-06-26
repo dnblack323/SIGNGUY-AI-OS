@@ -170,17 +170,16 @@ function SectionBanner({ workspace, module, activeModule }) {
 function WorkspaceRail({ workspace, module, onSelect, onNavigate }) {
   const [expanded, setExpanded] = useState(false);
 
-  useEffect(() => {
-    if (!expanded) return undefined;
-    const collapseOutside = (event) => {
-      if (!event.target.closest(".workspace-rail")) setExpanded(false);
-    };
-    document.addEventListener("pointerdown", collapseOutside);
-    return () => document.removeEventListener("pointerdown", collapseOutside);
-  }, [expanded]);
-
   return (
-    <aside className={expanded ? "workspace-rail expanded" : "workspace-rail"} onClick={() => setExpanded(true)}>
+    <aside
+      className={expanded ? "workspace-rail expanded" : "workspace-rail"}
+      onPointerEnter={() => setExpanded(true)}
+      onPointerLeave={() => setExpanded(false)}
+      onFocus={() => setExpanded(true)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setExpanded(false);
+      }}
+    >
       <div className="brand" aria-label="SignGuyAI">
         <span>SG</span>
         <strong>SignGuy<span>AI</span></strong>
