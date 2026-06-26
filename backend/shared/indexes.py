@@ -139,6 +139,38 @@ INDEX_MANIFEST: dict[str, tuple[IndexSpec, ...]] = {
     "template_categories": (
         IndexSpec(keys=(("tenant_id", ASCENDING), ("name", ASCENDING)), name="tenant_id_1_name_1"),
     ),
+    "orders": (
+        TENANT_ID_INDEX,
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("order_number", ASCENDING)), name="tenant_id_1_order_number_1_unique", unique=True),
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("customer_id", ASCENDING)), name="tenant_id_1_customer_id_1"),
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("status", ASCENDING), ("created_at", DESCENDING)), name="tenant_id_1_status_1_created_at_-1"),
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("order_source", ASCENDING)), name="tenant_id_1_order_source_1"),
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("requested_due_date", ASCENDING)), name="tenant_id_1_requested_due_date_1"),
+    ),
+    "order_items": (
+        TENANT_ID_INDEX,
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("ticket_number", ASCENDING)), name="tenant_id_1_ticket_number_1_unique", unique=True),
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("order_id", ASCENDING)), name="tenant_id_1_order_id_1"),
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("customer_id", ASCENDING)), name="tenant_id_1_customer_id_1"),
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("item_category", ASCENDING)), name="tenant_id_1_item_category_1"),
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("status", ASCENDING), ("due_date", ASCENDING)), name="tenant_id_1_status_1_due_date_1"),
+    ),
+    "order_item_specs": (
+        TENANT_ID_INDEX,
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("order_item_id", ASCENDING)), name="tenant_id_1_order_item_id_1_unique", unique=True),
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("order_id", ASCENDING)), name="tenant_id_1_order_id_1"),
+    ),
+    "order_item_pricing_snapshots": (
+        TENANT_ID_INDEX,
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("order_item_id", ASCENDING), ("created_at", DESCENDING)), name="tenant_id_1_order_item_id_1_created_at_-1"),
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("order_id", ASCENDING)), name="tenant_id_1_order_id_1"),
+    ),
+    "order_events": (
+        TENANT_ID_INDEX,
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("order_id", ASCENDING), ("created_at", DESCENDING)), name="tenant_id_1_order_id_1_created_at_-1"),
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("order_item_id", ASCENDING), ("created_at", DESCENDING)), name="tenant_id_1_order_item_id_1_created_at_-1"),
+        IndexSpec(keys=(("tenant_id", ASCENDING), ("event_type", ASCENDING), ("created_at", DESCENDING)), name="tenant_id_1_event_type_1_created_at_-1"),
+    ),
     "community_posts": (
         TENANT_ID_INDEX,
         IndexSpec(

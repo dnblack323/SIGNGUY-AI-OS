@@ -1,0 +1,211 @@
+import unittest
+from copy import deepcopy
+from unittest.mock import AsyncMock, patch
+
+from fastapi.testclient import TestClient
+
+from server import app
+
+
+class FakeOrdersRepository:
+    def __init__(self):
+        self.orders = {}
+        self.items = {}
+        self.events = []
+        self.snapshots = []
+        self.counter = 0
+
+    async def ensure_indexes(self):
+        return None
+
+    def _id(self, prefix):
+        self.counter += 1
+        return f"{prefix}-{self.counter}"
+
+    async def create_order(self, tenant_id, payload):
+        order_id = payload.get("id") or self._id("ORDID")
+        order = {
+            **payload,
+            "id": order_id,
+            "tenant_id": tenant_id,
+            "order_number": payload.get("order_number") or f"ORD-{len(self.orders) + 1:04d}",
+            "status": payload.get("status", "draft"),
+            "job_ticket_count": 0,
+            "overall_progress": 0,
+            "estimated_total_minor": 0,
+        }
+        self.orders[(tenant_id, order_id)] = order
+        await self.record_event(tenant_id, order_id, "", "order_created")
+        return deepcopy(order) | {"items": []}
+
+    async def list_orders(self, tenant_id, filters=None, limit=200):
+        rows = [deepcopy(row) for (tenant, _), row in self.orders.items() if tenant == tenant_id]
+        for key, value in (filters or {}).items():
+            if value:
+                rows = [row for row in rows if row.get(key) == value]
+        return rows
+
+    async def get_order(self, tenant_id, order_id, include_items=True):
+        row = self.orders.get((tenant_id, order_id))
+        if not row:
+            return None
+        result = deepcopy(row)
+        if include_items:
+            result["items"] = await self.list_items(tenant_id, order_id=order_id)
+        return result
+
+    async def update_order(self, tenant_id, order_id, patch):
+        row = self.orders.get((tenant_id, order_id))
+        if not row:
+            return None
+        row = {**row, **patch}
+        self.orders[(tenant_id, order_id)] = row
+        if patch.get("status"):
+            await self.record_event(tenant_id, order_id, "", "order_status_changed")
+        return await self.get_order(tenant_id, order_id)
+
+    async def delete_order(self, tenant_id, order_id):
+        return bool(await self.update_order(tenant_id, order_id, {"is_archived": True, "status": "cancelled"}))
+
+    async def create_item(self, tenant_id, payload):
+        if (tenant_id, payload["order_id"]) not in self.orders:
+            raise LookupError("Order not found")
+        item_id = payload.get("id") or self._id("ITEM")
+        item = {
+            **payload,
+            "id": item_id,
+            "tenant_id": tenant_id,
+            "ticket_number": f"{self.orders[(tenant_id, payload['order_id'])]['order_number']}-{len(self.items) + 1:02d}",
+            "specs": payload.get("specs", {}),
+            "latest_pricing_snapshot": None,
+        }
+        self.items[(tenant_id, item_id)] = item
+        await self.record_event(tenant_id, payload["order_id"], item_id, "order_item_created")
+        return deepcopy(item)
+
+    async def list_items(self, tenant_id, order_id="", category=""):
+        rows = [deepcopy(row) for (tenant, _), row in self.items.items() if tenant == tenant_id]
+        if order_id:
+            rows = [row for row in rows if row.get("order_id") == order_id]
+        if category:
+            rows = [row for row in rows if row.get("item_category") == category]
+        return rows
+
+    async def get_item(self, tenant_id, item_id):
+        row = self.items.get((tenant_id, item_id))
+        return deepcopy(row) if row else None
+
+    async def update_item(self, tenant_id, item_id, patch):
+        row = self.items.get((tenant_id, item_id))
+        if not row:
+            return None
+        row = {**row, **patch}
+        self.items[(tenant_id, item_id)] = row
+        if patch.get("status"):
+            await self.record_event(tenant_id, row["order_id"], item_id, "order_item_status_changed")
+        return deepcopy(row)
+
+    async def delete_item(self, tenant_id, item_id):
+        return self.items.pop((tenant_id, item_id), None) is not None
+
+    async def save_pricing_snapshot(self, tenant_id, item, calculation):
+        snapshot = {"id": self._id("PRICE"), "tenant_id": tenant_id, "order_id": item["order_id"], "order_item_id": item["id"], "calculation": calculation, **calculation}
+        self.snapshots.append(snapshot)
+        self.items[(tenant_id, item["id"])]["estimated_price_minor"] = calculation["selling_price_minor"]
+        self.items[(tenant_id, item["id"])]["latest_pricing_snapshot"] = snapshot
+        await self.record_event(tenant_id, item["order_id"], item["id"], "pricing_snapshot_saved")
+        return deepcopy(snapshot)
+
+    async def list_events(self, tenant_id, order_id, item_id=""):
+        rows = [deepcopy(row) for row in self.events if row["tenant_id"] == tenant_id and row["order_id"] == order_id]
+        if item_id:
+            rows = [row for row in rows if row["order_item_id"] == item_id]
+        return rows
+
+    async def record_event(self, tenant_id, order_id, item_id="", event_type="event", actor_id="", metadata=None):
+        event = {"id": self._id("EVT"), "tenant_id": tenant_id, "order_id": order_id, "order_item_id": item_id, "event_type": event_type, "metadata": metadata or {}}
+        self.events.insert(0, event)
+        return deepcopy(event)
+
+
+class OrdersApiTests(unittest.TestCase):
+    def setUp(self):
+        self.repo = FakeOrdersRepository()
+        self.doculink = AsyncMock()
+        self.doculink.list_links = AsyncMock(return_value={"file_links": [], "document_links": []})
+        self.doculink.create_file_link = AsyncMock(return_value={"id": "LINK-1", "entity_type": "order_item"})
+        self.patches = [
+            patch("routes.orders.repository", return_value=self.repo),
+            patch("routes.orders.doculink_repository", return_value=self.doculink),
+        ]
+        for active_patch in self.patches:
+            active_patch.start()
+        self.client = TestClient(app)
+
+    def tearDown(self):
+        for active_patch in self.patches:
+            active_patch.stop()
+
+    def test_orders_are_tenant_scoped_and_do_not_embed_item_ids(self):
+        created = self.client.post("/api/orders", json={"customer_name": "Apex", "order_source": "email"}, headers={"X-Tenant-Id": "shop-a"})
+        self.assertEqual(created.status_code, 201)
+        order = created.json()
+        self.assertNotIn("item_ids", order)
+
+        self.client.post(f"/api/orders/{order['id']}/items", json={"item_name": "Banner", "item_category": "banners", "quantity": 2}, headers={"X-Tenant-Id": "shop-a"})
+        shop_a = self.client.get("/api/orders", headers={"X-Tenant-Id": "shop-a"}).json()
+        shop_b = self.client.get("/api/orders", headers={"X-Tenant-Id": "shop-b"}).json()
+        self.assertEqual(len(shop_a), 1)
+        self.assertEqual(shop_b, [])
+
+    def test_item_schema_and_pricing_snapshot(self):
+        order = self.client.post("/api/orders", json={"customer_name": "Apex"}).json()
+        item = self.client.post(f"/api/orders/{order['id']}/items", json={
+            "item_name": "Outdoor banner",
+            "item_category": "banners",
+            "quantity": 2,
+            "specs": {"width": 8, "height": 3, "unit_of_measure": "feet", "banner_material_key": "banner_13oz"},
+        }).json()
+        schema = self.client.get("/api/job-tickets/schema/banners").json()
+        self.assertEqual(schema["category"], "banners")
+
+        result = self.client.post(f"/api/job-tickets/{item['id']}/save-pricing", json={"specs": {}}).json()
+        self.assertGreater(result["calculation"]["selling_price_minor"], 0)
+        updated = self.client.get(f"/api/job-tickets/{item['id']}").json()
+        self.assertGreater(updated["estimated_price_minor"], 0)
+
+    def test_job_ticket_specs_can_be_updated_before_pricing(self):
+        order = self.client.post("/api/orders", json={"customer_name": "Apex", "customer_id": "CUST-1"}).json()
+        item = self.client.post(f"/api/orders/{order['id']}/items", json={"item_name": "Yard sign", "item_category": "rigid_signs"}).json()
+
+        updated = self.client.put(f"/api/job-tickets/{item['id']}", json={
+            "specs": {"width": 24, "height": 18, "unit_of_measure": "inches", "substrate_type_key": "coroplast_4mm"}
+        }).json()
+
+        self.assertEqual(updated["specs"]["width"], 24)
+        self.assertEqual(updated["specs"]["substrate_type_key"], "coroplast_4mm")
+
+    def test_activity_and_doculink_artwork_link(self):
+        order = self.client.post("/api/orders", json={"customer_name": "Apex"}).json()
+        item = self.client.post(f"/api/orders/{order['id']}/items", json={"item_name": "Wrap", "item_category": "vehicle_wrap"}).json()
+        link = self.client.post(f"/api/orders/{order['id']}/items/{item['id']}/link-artwork", json={"file_id": "FILE-1"}).json()
+        self.assertEqual(link["id"], "LINK-1")
+        activity = self.client.get(f"/api/orders/{order['id']}/activity").json()
+        self.assertTrue(any(row["event_type"] == "order_item_created" for row in activity))
+
+    def test_order_and_item_status_updates_record_activity(self):
+        order = self.client.post("/api/orders", json={"customer_name": "Apex"}).json()
+        item = self.client.post(f"/api/orders/{order['id']}/items", json={"item_name": "Banner", "item_category": "banners"}).json()
+
+        updated_order = self.client.put(f"/api/orders/{order['id']}", json={"status": "approved"}).json()
+        updated_item = self.client.put(f"/api/job-tickets/{item['id']}", json={"status": "in_production"}).json()
+        activity = self.client.get(f"/api/orders/{order['id']}/activity").json()
+
+        self.assertEqual(updated_order["status"], "approved")
+        self.assertEqual(updated_item["status"], "in_production")
+        self.assertTrue(any(row["event_type"] == "order_status_changed" for row in activity))
+        self.assertTrue(any(row["event_type"] == "order_item_status_changed" for row in activity))
+
+
+if __name__ == "__main__":
+    unittest.main()
