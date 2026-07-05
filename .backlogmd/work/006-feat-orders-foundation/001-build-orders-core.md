@@ -14,7 +14,7 @@ expiresAt: null
 
 ## Description
 
-Add core backend and frontend support for Orders and Order Items/Job Tickets without building full quote, invoice, PDF, or production-board workflows yet.
+Add core backend and frontend support for Orders and Order Items without building full quote, invoice, PDF, or production-board workflows yet.
 
 <!-- ACCEPTANCE -->
 

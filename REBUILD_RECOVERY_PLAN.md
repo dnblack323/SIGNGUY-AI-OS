@@ -27,6 +27,47 @@ The current rebuild is not cleanly sitting in one phase. Work has been completed
 
 Do not rebuild from scratch unless the repo becomes technically unrecoverable. It is currently recoverable.
 
+## Source Boundaries For Phase 0
+
+Phase 0 should settle cross-app decisions and agent routing. It should not re-spec every module.
+
+Use this source order:
+
+1. Current user instruction in the active thread.
+2. Module-specific rebuild docs for implementation rules inside one module.
+3. `PHASE_0_DECISIONS.md` for product-wide scope, release order, terminology, launch integrations, and launch gates.
+4. This recovery plan for current repo-state sequencing.
+5. Architecture maps and older/live-app inspections as comparison inputs, not automatic tasks.
+
+Module-specific rebuild sheets live at:
+
+```text
+C:\Users\thesi\OneDrive\1 SignGuyAi OS\0REBUILD\all EMERGENT MD FILES\MODULE SPECS MDS\
+```
+
+Those sheets own module details such as Auth, Tenants/Organizations, Users/Roles/Permissions, Settings, Orders, Pricing, Webstores, AI, Platform Admin, and similar module behavior. Phase 0 may point to those sheets and record cross-module dependencies, but should not duplicate their endpoint lists, field-by-field rules, or UI workflows.
+
+The architecture map source is:
+
+```text
+C:\Users\thesi\OneDrive\1 SignGuyAi OS\0REBUILD\all EMERGENT MD FILES\SIGNGUY_AI_ARCHITECTURE_MAP.md
+```
+
+Use it as an architecture/navigation recommendation map. Compare each recommendation against the current rebuild before applying it.
+
+Already satisfied in the current rebuild:
+
+- The old flat 13-tab navigation has already been replaced by grouped workspaces in `frontend/src/data.js`.
+- The duplicate `frontend/src/context` and `frontend/src/contexts` folder issue is not present; the rebuild currently uses `frontend/src/context`.
+- The old unused `PricingPage.js` / `PricingPagePublic.js` cleanup does not apply; those files were not found in the rebuild.
+- Backend Order Item routes are already mounted as `/api/order-items`, not `/api/job-tickets`.
+
+Still relevant as cross-cutting Phase 0 drift:
+
+- `production_flow_enabled` still exists in `backend/models/orders.py`; the canonical Phase 0 field name is `production_required`.
+- Active backlog/docs should not use `Job Ticket` wording unless explicitly discussing legacy compatibility.
+- `DOCS_INDEX.md` must route agents to module specs and architecture sources before new module work begins.
+
 ## Evidence Snapshot
 
 Observed backend areas:
@@ -60,9 +101,9 @@ Observed backlog:
 - Done: DocuLink foundation.
 - Done: Orders foundation.
 
-Backlog hygiene issue:
+Backlog hygiene note:
 
-- The completed Orders backlog item still has `assignee: "/root"` and says `Order Items/Job Tickets` in the task description. Clean this up before using backlog as the agent control source.
+- The completed Orders backlog item had stale `assignee: "/root"` metadata and legacy combined Order Item wording. This was cleaned during Phase 0 control-doc alignment so active backlog language now follows `Order Items`.
 
 Verification snapshot:
 
@@ -100,7 +141,7 @@ Instructions:
 
 1. Keep `signguyai_rebuild_version` as the implementation repo.
 2. Keep the older `signguyai` repo as reference only.
-3. Add this recovery plan to the docs index.
+3. Keep `DOCS_INDEX.md` as the entry point for Phase 0, the recovery plan, module specs, and architecture source maps.
 4. Clean backlog language and stale assignee metadata.
 5. Install or document the exact backend/frontend dependencies needed to run tests and builds.
 6. Run and record:
@@ -113,7 +154,7 @@ Exit criteria:
 
 - A future agent can run the same verification commands without guessing.
 - Completed backlog items do not contain misleading terminology.
-- The docs entry point is clear: Phase 0 decisions, this recovery plan, then module specs.
+- The docs entry point is clear: Phase 0 decisions, this recovery plan, module specs, and architecture maps.
 
 ### Step 2: Close Phase 0 leftovers
 
@@ -133,6 +174,8 @@ Exit criteria:
 ### Step 3: Finish Release 0 foundation before more feature depth
 
 Goal: make the app commercially safe before building deeper modules.
+
+This step is module-owned implementation work. Use the Auth, Tenants/Organizations, Users/Roles/Permissions, Settings, Billing, and Platform Admin rebuild sheets where available instead of inventing rules from this recovery plan.
 
 Build order:
 
@@ -158,6 +201,8 @@ Exit criteria:
 ### Step 4: Repair core workflow naming and schema drift
 
 Goal: align current Orders work with Phase 0 before production depth is added.
+
+This step is Orders/Production module work. Phase 0 only defines the canonical naming rule; the actual schema/API/UI migration belongs to the Orders/Production spec-backed task.
 
 Required cleanup:
 
@@ -253,8 +298,8 @@ Do not treat preview UI as backend-complete.
 The next agent should perform this exact task:
 
 ```text
-Create the Foundation Closure backlog item and complete Step 1 from REBUILD_RECOVERY_PLAN.md:
-link the recovery plan in docs, clean stale backlog language/assignee metadata, install or document verification dependencies, then run backend compile, backend tests, frontend build, and report the current pass/fail state.
+Create the next module-owned Release 0 foundation task from the module rebuild sheets:
+start with Auth + Tenants + Users/Roles/Permissions, replace preview tenant assumptions through the spec-backed auth/tenant/user path, then prove tenant isolation and route permission tests.
 ```
 
-After that is done, the next task should be Step 2: close the remaining Phase 0 naming and pricing-category decisions.
+Do not start deeper feature work until the module-owned Release 0 foundation is complete.

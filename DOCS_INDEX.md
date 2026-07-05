@@ -13,6 +13,25 @@ This is the top-level documentation index for the full SignGuyAI rebuild. The re
 0b. `REBUILD_RECOVERY_PLAN.md`  
    Current repo-state recovery plan. Use this to pick up from the rebuild as it exists now instead of restarting from the generic phase plan.
 
+## Source Precedence For Agents
+
+Use the newest, most specific source that applies to the task:
+
+1. Current user instruction in the active thread.
+2. Module-specific rebuild docs for implementation details inside one module.
+3. `PHASE_0_DECISIONS.md` for cross-app product, terminology, release-order, and launch-gate decisions.
+4. `REBUILD_RECOVERY_PLAN.md` for current repo-state resume instructions.
+5. Architecture/navigation maps for structure recommendations, after checking whether the current rebuild already applied them.
+
+Do not use a broad Phase 0 or architecture note to overwrite a newer module rebuild sheet. Do not duplicate module-specific requirements in Phase 0 docs unless the rule affects multiple modules.
+
+## Platform Architecture And Module Source Docs
+
+These source documents live outside this repo and should be treated as source inputs, not copied wholesale into the repo:
+
+- `C:\Users\thesi\OneDrive\1 SignGuyAi OS\0REBUILD\all EMERGENT MD FILES\SIGNGUY_AI_ARCHITECTURE_MAP.md`: Complete app architecture, navigation, page map, and folder-structure recommendation. Compare this against the current rebuild before applying because some recommendations are already implemented here.
+- `C:\Users\thesi\OneDrive\1 SignGuyAi OS\0REBUILD\all EMERGENT MD FILES\MODULE SPECS MDS\`: Module rebuild sheets. These own module-specific rebuild rules such as Auth, Tenants/Organizations, Users/Roles/Permissions, Settings, Orders, Webstores, Pricing, AI, Platform Admin, and related module behavior.
+
 ## Order Portal / Webstores Module Docs
 
 These files came from the June 18 Order Portal Manager documentation conversion. They are useful for the Webstores / Order Portal expansion module, but they do not define the whole rebuild by themselves.
@@ -72,4 +91,4 @@ Source SHA-256: `1220c11cd909eade18dcf6f96be6d8b73a58cb3c461e20a14ef15b2027edb27
 
 ## Implementation Note
 
-For full-platform planning, read `PHASE_0_DECISIONS.md`, `PHASE_0_AGENT_MANUAL_OUTLINE.md`, and `REBUILD_RECOVERY_PLAN.md` first. Use the Order Portal docs only when working on the Webstores / Order Portal module or its shared-system integration points.
+For full-platform planning, read `PHASE_0_DECISIONS.md`, `PHASE_0_AGENT_MANUAL_OUTLINE.md`, `REBUILD_RECOVERY_PLAN.md`, and the source-precedence section above first. Use module rebuild sheets for module implementation details. Use the Order Portal docs only when working on the Webstores / Order Portal module or its shared-system integration points.

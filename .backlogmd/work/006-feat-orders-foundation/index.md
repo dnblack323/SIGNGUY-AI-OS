@@ -3,7 +3,7 @@
 ```yaml
 work: Build Orders and Order Items foundation
 status: done
-assignee: "/root"
+assignee: ""
 ```
 
 <!-- DESCRIPTION -->
