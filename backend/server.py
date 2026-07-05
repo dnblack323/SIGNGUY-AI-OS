@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 try:
+    from .routes.auth import auth_router, users_router
     from .routes.doculink import router as doculink_router
     from .routes.customers import router as customers_router
     from .routes.health import router as health_router
@@ -13,6 +14,7 @@ try:
     from .routes.webstores import router as webstores_router
     from .routes.wrap_lab import router as wrap_lab_router
 except ImportError:
+    from routes.auth import auth_router, users_router
     from routes.doculink import router as doculink_router
     from routes.customers import router as customers_router
     from routes.health import router as health_router
@@ -37,6 +39,8 @@ app.add_middleware(
 )
 
 app.include_router(health_router, prefix="/api")
+app.include_router(auth_router, prefix="/api")
+app.include_router(users_router, prefix="/api")
 app.include_router(doculink_router, prefix="/api")
 app.include_router(customers_router, prefix="/api")
 app.include_router(orders_router, prefix="/api")

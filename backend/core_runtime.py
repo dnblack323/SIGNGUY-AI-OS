@@ -50,6 +50,25 @@ def _decode_base64url(value: str) -> bytes:
     return base64.urlsafe_b64decode(value + padding)
 
 
+def _encode_base64url(value: bytes) -> str:
+    return base64.urlsafe_b64encode(value).rstrip(b"=").decode()
+
+
+def encode_bearer_token(claims: dict, expires_in_seconds: int = 86400) -> str:
+    payload = dict(claims)
+    payload.setdefault("exp", int(time.time()) + expires_in_seconds)
+    header_value = _encode_base64url(
+        json.dumps(
+            {"alg": SUPPORTED_JWT_ALGORITHM, "typ": "JWT"},
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode()
+    )
+    payload_value = _encode_base64url(json.dumps(payload, separators=(",", ":"), sort_keys=True).encode())
+    signature = hmac.new(jwt_secret().encode(), f"{header_value}.{payload_value}".encode(), hashlib.sha256).digest()
+    return f"{header_value}.{payload_value}.{_encode_base64url(signature)}"
+
+
 def decode_bearer_claims(token: str) -> dict:
     try:
         header_value, payload_value, signature_value = token.split(".")
