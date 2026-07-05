@@ -5,7 +5,7 @@ task: Build Orders core
 status: done
 priority: 10
 dep: []
-assignee: "/root"
+assignee: ""
 requiresHumanReview: false
 expiresAt: null
 ```

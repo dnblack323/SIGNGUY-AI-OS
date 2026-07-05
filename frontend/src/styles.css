@@ -523,7 +523,7 @@ h1, h2 { font-family: Manrope, sans-serif; color: #172033; }
 .orders-hero h1 { margin: 3px 0 5px; font-size: 26px; }
 .orders-hero p { margin: 0; color: var(--muted); font-size: 12px; max-width: 780px; line-height: 1.5; }
 .orders-create { border: 1px solid var(--border); border-radius: 12px; background: white; padding: 12px; display: grid; grid-template-columns: minmax(190px, 1.2fr) repeat(3, minmax(140px, 1fr)); gap: 9px; }
-.orders-create input, .orders-create select, .orders-filters input, .orders-filters select, .order-item-create input, .order-item-create select { width: 100%; border: 1px solid var(--border); border-radius: 9px; background: white; color: #172033; padding: 10px 11px; outline: 0; font: inherit; font-size: 12px; }
+.orders-create input, .orders-create select, .orders-filters input, .orders-filters select, .order-item-create input:not([type="checkbox"]), .order-item-create select { width: 100%; border: 1px solid var(--border); border-radius: 9px; background: white; color: #172033; padding: 10px 11px; outline: 0; font: inherit; font-size: 12px; }
 .orders-create button { border: 1px solid #b9d9d6; border-radius: 8px; background: white; color: var(--teal-dark); padding: 9px 11px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; font-weight: 800; cursor: pointer; }
 .orders-layout { display: grid; grid-template-columns: minmax(280px, .42fr) minmax(0, 1fr); gap: 14px; align-items: start; }
 .orders-list-panel, .order-detail-panel { border: 1px solid var(--border); border-radius: 12px; background: white; overflow: hidden; }
@@ -549,7 +549,9 @@ h1, h2 { font-family: Manrope, sans-serif; color: #172033; }
 .order-detail-tabs button { border: 1px solid var(--border); border-radius: 999px; background: white; color: #526074; padding: 8px 10px; font-size: 10px; font-weight: 800; white-space: nowrap; cursor: pointer; }
 .order-detail-tabs button.active, .order-detail-tabs button:hover { border-color: #9ccbc7; background: #e9f7f5; color: var(--teal-dark); }
 .order-tab-panel { padding: 14px; }
-.order-item-create { display: grid; grid-template-columns: minmax(220px, 1fr) 160px 90px auto; gap: 9px; margin-bottom: 12px; }
+.order-item-create { display: grid; grid-template-columns: minmax(220px, 1fr) 160px 90px 110px auto; gap: 9px; margin-bottom: 12px; }
+.order-item-create label, .order-item-production-toggle { min-height: 38px; display: inline-flex; align-items: center; gap: 7px; color: #526074; font-size: 10px; font-weight: 800; }
+.order-item-create label input, .order-item-production-toggle input { width: 14px; height: 14px; accent-color: var(--teal); }
 .order-items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
 .order-items-grid article, .order-financial-grid article, .order-notes-grid article { border: 1px solid var(--border); border-radius: 11px; background: #fbfcfd; padding: 13px; }
 .order-items-grid article > div:first-child { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--teal-dark); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
@@ -561,6 +563,7 @@ h1, h2 { font-family: Manrope, sans-serif; color: #172033; }
 .order-items-grid dd { margin: 2px 0 0; color: #263246; font-weight: 800; font-size: 11px; }
 .order-item-status-row { margin: -2px 0 10px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; }
 .order-item-status-row span { color: var(--muted); font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+.order-item-production-toggle { margin: -4px 0 10px; min-height: 24px; }
 .order-item-actions { display: flex; flex-wrap: wrap; gap: 7px; }
 .order-spec-editor { margin-top: 12px; border-top: 1px solid #edf0f4; padding-top: 12px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
 .order-spec-editor label { display: flex; flex-direction: column; gap: 5px; color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }

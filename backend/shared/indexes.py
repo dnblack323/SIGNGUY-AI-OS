@@ -260,6 +260,17 @@ INDEX_MANIFEST: dict[str, tuple[IndexSpec, ...]] = {
         IndexSpec(keys=(("tenant_id", ASCENDING), ("status", ASCENDING), ("feature_key", ASCENDING)), name="tenant_status_feature_key"),
         IndexSpec(keys=(("tenant_id", ASCENDING), ("source_product_id", ASCENDING)), name="tenant_source_product"),
     ),
+    "tenants": (
+        IndexSpec(keys=(("tenant_id", ASCENDING),), name="tenant_id_unique", unique=True),
+        IndexSpec(keys=(("account_status", ASCENDING), ("updated_at", DESCENDING)), name="account_status_updated"),
+        IndexSpec(keys=(("billing_status", ASCENDING), ("updated_at", DESCENDING)), name="billing_status_updated"),
+        IndexSpec(keys=(("slug", ASCENDING),), name="slug_unique", unique=True),
+    ),
+    "platform_admin_audit_events": (
+        IndexSpec(keys=(("target_tenant_id", ASCENDING), ("created_at", DESCENDING)), name="target_tenant_created"),
+        IndexSpec(keys=(("actor_id", ASCENDING), ("created_at", DESCENDING)), name="actor_created"),
+        IndexSpec(keys=(("action", ASCENDING), ("created_at", DESCENDING)), name="action_created"),
+    ),
 }
 
 

@@ -8,10 +8,11 @@ const actionableOrderStatuses = orderStatuses.filter(Boolean);
 const itemStatuses = ["new", "awaiting_info", "awaiting_proof", "awaiting_approval", "approved", "queued", "in_production", "in_qc", "ready", "completed", "on_hold", "rework", "cancelled"];
 const quoteStatuses = ["draft_internal", "ready_for_review", "sent", "approved", "revision_requested", "declined", "archived"];
 const categories = ["banners", "rigid_signs", "cut_vinyl", "digital_print", "vehicle_wrap", "apparel", "services", "promo_misc", "custom"];
+const productionDefaultCategories = new Set(["banners", "rigid_signs", "cut_vinyl", "digital_print", "vehicle_wrap", "apparel", "promo_misc", "custom"]);
 const detailTabs = ["Order Items", "Production", "Financial", "Drawings", "Files", "Notes", "Activity"];
 
 const emptyOrderDraft = { customer_id: "", customer_name: "", contact_name: "", email: "", phone: "", company_name: "", order_source: "email", order_title: "" };
-const emptyItemDraft = { item_name: "", item_category: "banners", quantity: 1, unit_type: "each" };
+const emptyItemDraft = { item_name: "", item_category: "banners", quantity: 1, unit_type: "each", production_required: true };
 
 export function OrdersWorkspace({ onToast, onNavigate }) {
   const [orders, setOrders] = useState([]);
@@ -135,6 +136,12 @@ export function OrdersWorkspace({ onToast, onNavigate }) {
     onToast?.(`${item.item_number} moved to ${label(status)}`);
   };
 
+  const updateItemProductionRequired = async (item, productionRequired) => {
+    await api(`/order-items/${item.id}`, { method: "PUT", body: JSON.stringify({ production_required: productionRequired }) });
+    await refreshOrder();
+    onToast?.(`${item.item_number} ${productionRequired ? "will be included in production" : "removed from production handoff"}`);
+  };
+
   const uploadOrderFile = async (file) => {
     if (!file || !activeOrder) return;
     const form = new FormData();
@@ -225,7 +232,7 @@ export function OrdersWorkspace({ onToast, onNavigate }) {
               <div className="order-status-controls"><strong>{money(activeOrder.estimated_total_minor)}</strong><select value={activeOrder.status} onChange={(event) => updateOrderStatus(event.target.value)}>{actionableOrderStatuses.map((status) => <option key={status} value={status}>{label(status)}</option>)}</select><button onClick={nextOrderStep}>Next Step</button></div>
             </header>
             <nav className="order-detail-tabs">{detailTabs.map((tab) => <button key={tab} className={activeTab === tab ? "active" : ""} onClick={() => setActiveTab(tab)}>{tab}</button>)}</nav>
-            {activeTab === "Order Items" && <OrderItemsTab order={activeOrder} draft={itemDraft} setDraft={setItemDraft} createItem={createItem} saveItemSpecs={saveItemSpecs} calculateItem={calculateItem} updateItemStatus={updateItemStatus} />}
+            {activeTab === "Order Items" && <OrderItemsTab order={activeOrder} draft={itemDraft} setDraft={setItemDraft} createItem={createItem} saveItemSpecs={saveItemSpecs} calculateItem={calculateItem} updateItemStatus={updateItemStatus} updateItemProductionRequired={updateItemProductionRequired} />}
             {activeTab === "Production" && <ProductionTab workOrderDrafts={workOrderDrafts} generateWorkOrderDraft={generateWorkOrderDraft} />}
             {activeTab === "Financial" && <FinancialTab order={activeOrder} quoteDrafts={quoteDrafts} invoiceDrafts={invoiceDrafts} generateQuoteDraft={generateQuoteDraft} saveQuoteDraft={saveQuoteDraft} generateInvoiceDraft={generateInvoiceDraft} />}
             {activeTab === "Drawings" && <Placeholder icon={FileText} title="Drawings use DocuLink" text="Order drawings and markups will be linked through DocuLink file/document IDs." />}
@@ -239,15 +246,17 @@ export function OrdersWorkspace({ onToast, onNavigate }) {
   );
 }
 
-function OrderItemsTab({ order, draft, setDraft, createItem, saveItemSpecs, calculateItem, updateItemStatus }) {
+function OrderItemsTab({ order, draft, setDraft, createItem, saveItemSpecs, calculateItem, updateItemStatus, updateItemProductionRequired }) {
+  const updateDraftCategory = (category) => setDraft({ ...draft, item_category: category, production_required: productionDefaultCategories.has(category) });
+
   return <section className="order-tab-panel">
-    <div className="order-item-create"><input value={draft.item_name} onChange={(event) => setDraft({ ...draft, item_name: event.target.value })} placeholder="Item name / order item description" /><select value={draft.item_category} onChange={(event) => setDraft({ ...draft, item_category: event.target.value })}>{categories.map((category) => <option key={category}>{category}</option>)}</select><input type="number" value={draft.quantity} onChange={(event) => setDraft({ ...draft, quantity: Number(event.target.value) })} /><button onClick={createItem}><Plus size={15} />Add Item</button></div>
-    <div className="order-items-grid">{(order.items || []).map((item) => <OrderItemCard key={item.id} item={item} saveItemSpecs={saveItemSpecs} calculateItem={calculateItem} updateItemStatus={updateItemStatus} />)}</div>
+    <div className="order-item-create"><input value={draft.item_name} onChange={(event) => setDraft({ ...draft, item_name: event.target.value })} placeholder="Item name / order item description" /><select value={draft.item_category} onChange={(event) => updateDraftCategory(event.target.value)}>{categories.map((category) => <option key={category}>{category}</option>)}</select><input type="number" value={draft.quantity} onChange={(event) => setDraft({ ...draft, quantity: Number(event.target.value) })} /><label><input type="checkbox" checked={draft.production_required} onChange={(event) => setDraft({ ...draft, production_required: event.target.checked })} />Production</label><button onClick={createItem}><Plus size={15} />Add Item</button></div>
+    <div className="order-items-grid">{(order.items || []).map((item) => <OrderItemCard key={item.id} item={item} saveItemSpecs={saveItemSpecs} calculateItem={calculateItem} updateItemStatus={updateItemStatus} updateItemProductionRequired={updateItemProductionRequired} />)}</div>
     {!order.items?.length && <Empty title="No order items yet" text="Add the first order item to start pricing and production planning." />}
   </section>;
 }
 
-function OrderItemCard({ item, saveItemSpecs, calculateItem, updateItemStatus }) {
+function OrderItemCard({ item, saveItemSpecs, calculateItem, updateItemStatus, updateItemProductionRequired }) {
   const [expanded, setExpanded] = useState(false);
   const [schema, setSchema] = useState([]);
   const [specs, setSpecs] = useState(item.specs || {});
@@ -266,6 +275,7 @@ function OrderItemCard({ item, saveItemSpecs, calculateItem, updateItemStatus })
     <p>{item.description || "No item description yet."}</p>
     <dl><div><dt>Qty</dt><dd>{item.quantity}</dd></div><div><dt>Status</dt><dd>{label(item.status)}</dd></div><div><dt>Price</dt><dd>{money(item.estimated_price_minor)}</dd></div></dl>
     <div className="order-item-status-row"><span>Item Status</span><select value={item.status} onChange={(event) => updateItemStatus(item, event.target.value)}>{itemStatuses.map((status) => <option key={status} value={status}>{label(status)}</option>)}</select></div>
+    <label className="order-item-production-toggle"><input type="checkbox" checked={Boolean(item.production_required)} onChange={(event) => updateItemProductionRequired(item, event.target.checked)} />Production required</label>
     <div className="order-item-actions">
       <button onClick={() => setExpanded((value) => !value)}><FileText size={14} />{expanded ? "Hide Specs" : "Edit Specs"}</button>
       <button onClick={() => calculateItem(item, specs)}><Calculator size={14} />Calculate</button>

@@ -106,7 +106,7 @@ class OrderItemPayload(PreviewEnvelope):
     assigned_team: str = ""
     assigned_user_id: str = ""
     status: ItemStatus = "new"
-    production_flow_enabled: bool = False
+    production_required: bool | None = None
     entry_mode: EntryMode = "quick"
     estimated_price_minor: int = 0
     actual_cost_minor: int = 0
@@ -150,7 +150,7 @@ class OrderItemPatch(PreviewEnvelope):
     assigned_team: str | None = None
     assigned_user_id: str | None = None
     status: ItemStatus | None = None
-    production_flow_enabled: bool | None = None
+    production_required: bool | None = None
     entry_mode: EntryMode | None = None
     estimated_price_minor: int | None = None
     manual_quote_override_minor: int | None = None

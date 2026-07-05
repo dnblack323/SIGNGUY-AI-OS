@@ -4,10 +4,15 @@ try:
     from ..shared.dates import utc_now
     from ..shared.ids import new_id
     from ..shared.indexes import ensure_collection_indexes
+    from ..services.order_item_rules import default_production_required
 except ImportError:
     from shared.dates import utc_now
     from shared.ids import new_id
     from shared.indexes import ensure_collection_indexes
+    from services.order_item_rules import default_production_required
+
+
+LEGACY_PRODUCTION_FLOW_FIELD = "production_flow_enabled"
 
 
 class OrdersRepository:
@@ -100,6 +105,7 @@ class OrdersRepository:
         order = await self.get_order(tenant_id, payload["order_id"], include_items=False)
         if not order:
             raise LookupError("Order not found")
+        payload = self._with_item_defaults(payload)
         now = utc_now()
         item_id = payload.get("id") or new_id()
         item_number = payload.get("item_number") or await self._next_item_number(tenant_id, order["id"], order["order_number"])
@@ -393,9 +399,9 @@ class OrdersRepository:
         order = await self.get_order(tenant_id, order_id, include_items=True)
         if not order:
             raise LookupError("Order not found")
-        items = order.get("items", [])
+        items = [item for item in order.get("items", []) if item.get("production_required")]
         if not items:
-            raise ValueError("Add at least one order item before generating a work order")
+            raise ValueError("Mark at least one order item as production_required before generating a work order")
 
         now = utc_now()
         production_items = []
@@ -445,9 +451,25 @@ class OrdersRepository:
         return {key: value for key, value in document.items() if key != "_id"}
 
     async def _hydrate_item(self, tenant_id: str, item: dict) -> dict:
+        item = self._normalize_item_schema(item)
         spec = await self.specs.find_one({"tenant_id": tenant_id, "order_item_id": item["id"]}, {"_id": 0})
         snapshots = await self.list_pricing_snapshots(tenant_id, item["id"])
         return {**item, "specs": spec.get("specs", {}) if spec else {}, "latest_pricing_snapshot": snapshots[0] if snapshots else None}
+
+    def _normalize_item_schema(self, item: dict) -> dict:
+        normalized = {key: value for key, value in item.items() if key != LEGACY_PRODUCTION_FLOW_FIELD}
+        if "production_required" not in normalized:
+            legacy_value = item.get(LEGACY_PRODUCTION_FLOW_FIELD)
+            normalized["production_required"] = bool(legacy_value) if legacy_value is not None else default_production_required(item.get("item_category", ""))
+        return normalized
+
+    def _with_item_defaults(self, payload: dict) -> dict:
+        if payload.get("production_required") is not None:
+            return payload
+        return {
+            **payload,
+            "production_required": default_production_required(payload.get("item_category", "")),
+        }
 
     async def _with_projection(self, tenant_id: str, order: dict) -> dict:
         items = await self.items.find({"tenant_id": tenant_id, "order_id": order["id"]}, {"_id": 0}).to_list(length=1000)

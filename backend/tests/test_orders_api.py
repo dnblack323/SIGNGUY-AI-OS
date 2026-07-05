@@ -1,10 +1,13 @@
+import asyncio
 import unittest
 from copy import deepcopy
 from unittest.mock import AsyncMock, patch
 
 from fastapi.testclient import TestClient
 
+from repositories.orders import OrdersRepository
 from server import app
+from services.order_item_rules import default_production_required
 
 
 class FakeOrdersRepository:
@@ -73,6 +76,8 @@ class FakeOrdersRepository:
     async def create_item(self, tenant_id, payload):
         if (tenant_id, payload["order_id"]) not in self.orders:
             raise LookupError("Order not found")
+        if payload.get("production_required") is None:
+            payload = {**payload, "production_required": default_production_required(payload.get("item_category", ""))}
         item_id = payload.get("id") or self._id("ITEM")
         item = {
             **payload,
@@ -223,15 +228,16 @@ class FakeOrdersRepository:
         order = await self.get_order(tenant_id, order_id)
         if not order:
             raise LookupError("Order not found")
-        if not order.get("items"):
-            raise ValueError("Add at least one order item before generating a work order")
+        production_required_items = [item for item in order.get("items", []) if item.get("production_required")]
+        if not production_required_items:
+            raise ValueError("Mark at least one order item as production_required before generating a work order")
         production_items = [{
             "order_item_id": item["id"],
             "item_number": item["item_number"],
             "item_name": item["item_name"],
             "item_category": item.get("item_category", "custom"),
             "tasks": [{"task_key": "review_specs", "status": "not_started"}, {"task_key": "produce", "status": "not_started"}, {"task_key": "quality_check", "status": "not_started"}],
-        } for item in order["items"]]
+        } for item in production_required_items]
         work_order = {
             "id": self._id("WO"),
             "tenant_id": tenant_id,
@@ -391,8 +397,8 @@ class OrdersApiTests(unittest.TestCase):
 
     def test_generate_work_order_draft_from_order_items(self):
         order = self.client.post("/api/orders", json={"customer_name": "Apex", "customer_id": "CUST-1", "status": "approved"}).json()
-        self.client.post(f"/api/orders/{order['id']}/items", json={"item_name": "Banner", "item_category": "banners"}).json()
-        self.client.post(f"/api/orders/{order['id']}/items", json={"item_name": "Install", "item_category": "services"}).json()
+        production_item = self.client.post(f"/api/orders/{order['id']}/items", json={"item_name": "Banner", "item_category": "banners", "production_required": True}).json()
+        self.client.post(f"/api/orders/{order['id']}/items", json={"item_name": "Design consult", "item_category": "services", "production_required": False}).json()
 
         work_order = self.client.post(f"/api/orders/{order['id']}/generate-work_order").json()
         work_orders = self.client.get(f"/api/orders/{order['id']}/work-orders").json()
@@ -401,12 +407,57 @@ class OrdersApiTests(unittest.TestCase):
         activity = self.client.get(f"/api/orders/{order['id']}/activity").json()
 
         self.assertEqual(work_order["status"], "draft")
-        self.assertEqual(work_order["item_count"], 2)
+        self.assertEqual(work_order["item_count"], 1)
+        self.assertEqual(work_order["production_items"][0]["order_item_id"], production_item["id"])
         self.assertTrue(all(row["tasks"] for row in work_order["production_items"]))
         self.assertEqual(work_orders[0]["id"], work_order["id"])
         self.assertEqual(production["latest_work_order_draft"]["id"], work_order["id"])
         self.assertEqual(updated_order["status"], "in_production")
         self.assertTrue(any(row["event_type"] == "work_order_draft_generated" for row in activity))
+
+    def test_generate_work_order_requires_at_least_one_production_required_item(self):
+        order = self.client.post("/api/orders", json={"customer_name": "Apex", "customer_id": "CUST-1", "status": "approved"}).json()
+        self.client.post(f"/api/orders/{order['id']}/items", json={"item_name": "Design consult", "item_category": "services", "production_required": False}).json()
+
+        response = self.client.post(f"/api/orders/{order['id']}/generate-work_order")
+
+        self.assertEqual(response.status_code, 409)
+        self.assertIn("production_required", response.json()["detail"])
+
+    def test_order_item_production_required_defaults_by_category(self):
+        order = self.client.post("/api/orders", json={"customer_name": "Apex", "customer_id": "CUST-1", "status": "approved"}).json()
+
+        banner = self.client.post(f"/api/orders/{order['id']}/items", json={"item_name": "Banner", "item_category": "banners"}).json()
+        service = self.client.post(f"/api/orders/{order['id']}/items", json={"item_name": "Design consult", "item_category": "services"}).json()
+        overridden = self.client.post(f"/api/orders/{order['id']}/items", json={"item_name": "Non-production banner", "item_category": "banners", "production_required": False}).json()
+
+        self.assertTrue(banner["production_required"])
+        self.assertFalse(service["production_required"])
+        self.assertFalse(overridden["production_required"])
+
+    def test_work_order_generation_uses_category_defaults_when_production_required_omitted(self):
+        order = self.client.post("/api/orders", json={"customer_name": "Apex", "customer_id": "CUST-1", "status": "approved"}).json()
+        banner = self.client.post(f"/api/orders/{order['id']}/items", json={"item_name": "Banner", "item_category": "banners"}).json()
+        self.client.post(f"/api/orders/{order['id']}/items", json={"item_name": "Delivery", "item_category": "services"}).json()
+
+        work_order = self.client.post(f"/api/orders/{order['id']}/generate-work_order").json()
+
+        self.assertEqual(work_order["item_count"], 1)
+        self.assertEqual(work_order["production_items"][0]["order_item_id"], banner["id"])
+
+
+class OrdersRepositoryTests(unittest.TestCase):
+    def test_hydrate_item_normalizes_legacy_production_flow_field(self):
+        repository = OrdersRepository.__new__(OrdersRepository)
+        repository.specs = AsyncMock()
+        repository.specs.find_one.return_value = None
+        repository.list_pricing_snapshots = AsyncMock(return_value=[])
+
+        item = {"id": "ITEM-1", "production_flow_enabled": True}
+        hydrated = asyncio.run(repository._hydrate_item("shop-a", item))
+
+        self.assertTrue(hydrated["production_required"])
+        self.assertNotIn("production_flow_enabled", hydrated)
 
 
 if __name__ == "__main__":

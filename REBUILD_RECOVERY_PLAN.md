@@ -62,9 +62,14 @@ Already satisfied in the current rebuild:
 - The old unused `PricingPage.js` / `PricingPagePublic.js` cleanup does not apply; those files were not found in the rebuild.
 - Backend Order Item routes are already mounted as `/api/order-items`, not `/api/job-tickets`.
 
+Recently resolved cross-cutting Phase 0 drift:
+
+- Order Item payload/patch models now use canonical `production_required`.
+- Work order draft generation only snapshots Order Items where `production_required = true`.
+- Category-aware defaults now set physical product items to production-required by default and service/non-production items to false unless explicitly overridden.
+
 Still relevant as cross-cutting Phase 0 drift:
 
-- `production_flow_enabled` still exists in `backend/models/orders.py`; the canonical Phase 0 field name is `production_required`.
 - Active backlog/docs should not use `Job Ticket` wording unless explicitly discussing legacy compatibility.
 - `DOCS_INDEX.md` must route agents to module specs and architecture sources before new module work begins.
 
@@ -107,26 +112,28 @@ Backlog hygiene note:
 
 Verification snapshot:
 
-- Backend compile passed with bundled Python: `python -m compileall backend`.
-- Test execution is currently blocked because the available Python runtimes do not have `pytest`, `fastapi`, or `pymongo` installed.
-- Frontend build did not run because `frontend/node_modules` is missing.
+- Backend compile passes with bundled Python: `python -m compileall backend`.
+- Focused Orders tests pass with bundled Python: `python -m unittest tests.test_orders_api`.
+- Full backend unittest discovery passes with bundled Python: `python -m unittest discover tests`.
+- Frontend production build passes from `frontend/`: `npm.cmd run build`.
+- `git diff --check` currently reports only Windows line-ending warnings on edited files.
 
 ## Phase Map
 
 | Roadmap Phase | Current Status | What Is Done | What Still Needs Done |
 | --- | --- | --- | --- |
 | Phase 0: Product shape | Mostly done, with open naming decisions | `PHASE_0_DECISIONS.md` and `PHASE_0_AGENT_MANUAL_OUTLINE.md` exist. Founder pricing and release order are captured. | Final public name for Webstores vs Order Portal Manager. Final production-unit label. Pricing category matrix details. |
-| Phase 1: Architecture and data model | Strong partial | FastAPI/Vite shell, Mongo repositories, UUIDv7 IDs, integer money, tenant indexes, normalized child records. | Full schema review against Phase 0, production naming cleanup, environment bootstrap, repeatable verification. |
+| Phase 1: Architecture and data model | Strong partial | FastAPI/Vite shell, Mongo repositories, UUIDv7 IDs, integer money, tenant indexes, normalized child records, repeatable backend/frontend verification. | Full schema review against Phase 0 and production environment bootstrap. |
 | Phase 2: Auth, tenant isolation, billing | Not launch-ready | Preview tenant dependency exists. Permission helper exists. Billing docs exist. | Real auth, user accounts, tenant membership, roles, entitlements, founder billing records, Stripe products/coupons, platform fees, tenant isolation tests. |
 | Phase 3: Core CRM | Partial | Shared customer records, frontend workspace, customer API. | Real CRM depth: contacts, addresses, activity, tags, import/export, customer portal linkage, duplicate handling. |
 | Phase 4: Pricing engine | Partial | Pricing foundation workspace, backend persistence, category schemas, backend pricing snapshots, integer cents. | Complete launch category matrix, owner override reasons, audited overrides, explain-math panel, pricing tests, tenant-specific settings applied to calculations. |
-| Phase 5: Production workflow | Early partial | Order items, statuses, work order drafts, production summary concepts. | Rename schema to `production_required`, default rules by item type, automatic production units, production board, production task states, field/mobile view. |
+| Phase 5: Production workflow | Early partial | Order items, statuses, work order drafts, production summary concepts, `production_required` schema, and category-aware production defaults. | Automatic production units beyond draft snapshots, production board, production task states, field/mobile view. |
 | Phase 6: Customer portal | Mostly missing | DocuLink share concepts and Wrap portal preview concepts exist. | Customer Portal Lite, public auth/magic links, proof approval, structured signatures/drawings, customer-visible files/statuses. |
 | Phase 7: Documents/files/templates | Partial and promising | DocuLink foundation, file upload/linking, document records, shares, activity. | Templates, signature request flow, proof approval flow, storage provider hardening, file scanning policy, access control. |
 | Phase 8: Employee tools | Mostly not started | Navigation placeholders and preview module status exist. | Time tracking, payroll, employee roles, staff productivity tools. Defer until core workflow is stable. |
 | Phase 9: Webstores/add-ons | Spec and UI preview only | Order Portal docs, standalone mode, preview workspace, capability/readiness endpoints. | Real portal CRUD, products, public storefront, cart, checkout, Stripe Connect, owner portal, portal-to-order conversion. |
 | Phase 10: AI tools | Preview only | AI tool catalog and preview response persistence exist. | Real AI provider, credit ledger, cost tracking, daily limits, model logging, tenant balance enforcement. |
-| Phase 11: Admin/observability/hardening | Mostly missing | Platform admin is listed in Phase 0. Basic health route exists. | Platform admin portal, audit logs, error tracking, logs, backups, rate limits, support tooling, security review. |
+| Phase 11: Admin/observability/hardening | Early partial | Basic health route exists. Platform Admin backend skeleton can list tenants, update tenant account/billing status, and record platform admin audit events without implementing login or impersonation flows. | Platform admin frontend portal, impersonation after Emergent-owned auth, error tracking, logs, backups, rate limits, support tooling, security review. |
 | Phase 12: Launch polish | Not started | App has a previewable shell. | QA pass, onboarding, empty states, docs, terms/privacy, production deploy path, monitoring, support process. |
 
 ## Resume From Here
@@ -189,7 +196,7 @@ Build order:
 8. Object storage production config.
 9. Email provider foundation.
 10. Audit log foundation.
-11. Platform creator/admin skeleton.
+11. Platform creator/admin skeleton. Backend tenant status/audit foundation is done; frontend portal and impersonation wait for Emergent-owned auth/login work.
 
 Exit criteria:
 
@@ -206,8 +213,8 @@ This step is Orders/Production module work. Phase 0 only defines the canonical n
 
 Required cleanup:
 
-1. Replace or migrate `production_flow_enabled` to `production_required`.
-2. Set defaults by item category:
+1. Replace or migrate `production_flow_enabled` to `production_required`. Done for active API/frontend code, with repository read normalization for old saved records.
+2. Set defaults by item category. Done in backend rules and mirrored in the Orders UI:
    - physical products default true
    - fees, delivery, discounts, admin charges, and non-production lines default false
 3. Remove user-facing `Job Ticket` wording from active docs/backlog/UI unless it is explicitly historical.
@@ -289,7 +296,7 @@ Do not build payroll, QuickBooks, Twilio, full AI, multi-location, or advanced a
 
 Do not build more Webstores checkout depth before auth, entitlements, billing, and Stripe Connect architecture are in place.
 
-Do not build production-board depth until the `production_required` schema rule is corrected.
+Do not build production-board depth until the `production_required` cleanup remains verified and Release 0 tenant/auth/permission foundations are ready to protect the workflow.
 
 Do not treat preview UI as backend-complete.
 
@@ -301,5 +308,7 @@ The next agent should perform this exact task:
 Create the next module-owned Release 0 foundation task from the module rebuild sheets:
 start with Auth + Tenants + Users/Roles/Permissions, replace preview tenant assumptions through the spec-backed auth/tenant/user path, then prove tenant isolation and route permission tests.
 ```
+
+Current Codex-thread constraint: the user asked Codex to hold off on creating logins and related account flows because Emergent will handle that part. Codex work should stay on non-login foundation closure unless the user changes that boundary.
 
 Do not start deeper feature work until the module-owned Release 0 foundation is complete.
