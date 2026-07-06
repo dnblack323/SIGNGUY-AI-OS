@@ -1,0 +1,56 @@
+import { cn } from "@/lib/utils";
+
+const QUOTE = {
+  draft: "bg-slate-100 text-slate-700 ring-1 ring-slate-200",
+  sent: "bg-sky-100 text-sky-800 ring-1 ring-sky-200",
+  approved: "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200",
+  declined: "bg-rose-100 text-rose-800 ring-1 ring-rose-200",
+  converted: "bg-violet-100 text-violet-800 ring-1 ring-violet-200",
+};
+const ORDER = {
+  draft: "bg-slate-100 text-slate-700 ring-1 ring-slate-200",
+  confirmed: "bg-sky-100 text-sky-800 ring-1 ring-sky-200",
+  in_production: "bg-amber-100 text-amber-900 ring-1 ring-amber-200",
+  completed: "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200",
+  cancelled: "bg-slate-200 text-slate-800 ring-1 ring-slate-300",
+};
+const PROD = {
+  not_started: "bg-slate-100 text-slate-700 ring-1 ring-slate-200",
+  in_progress: "bg-amber-100 text-amber-900 ring-1 ring-amber-200",
+  on_hold: "bg-orange-100 text-orange-900 ring-1 ring-orange-200",
+  completed: "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200",
+};
+const INV = {
+  draft: "bg-slate-100 text-slate-700 ring-1 ring-slate-200",
+  sent: "bg-sky-100 text-sky-800 ring-1 ring-sky-200",
+  viewed: "bg-indigo-100 text-indigo-800 ring-1 ring-indigo-200",
+  partially_paid: "bg-amber-100 text-amber-900 ring-1 ring-amber-200",
+  paid: "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200",
+  overdue: "bg-rose-100 text-rose-800 ring-1 ring-rose-200",
+  void: "bg-slate-200 text-slate-800 ring-1 ring-slate-300",
+};
+const EMAIL = {
+  queued: "bg-slate-100 text-slate-700 ring-1 ring-slate-200",
+  sent: "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200",
+  delivered: "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200",
+  failed: "bg-rose-100 text-rose-800 ring-1 ring-rose-200",
+  skipped: "bg-slate-100 text-slate-700 ring-1 ring-slate-200",
+};
+
+const MAPS = { quote: QUOTE, order: ORDER, production: PROD, invoice: INV, email: EMAIL };
+
+export function StatusPill({ kind, value, className }) {
+  const map = MAPS[kind] || QUOTE;
+  const cls = map[value] || "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
+  const label = String(value || "unknown").replace(/_/g, " ");
+  return (
+    <span
+      data-testid="status-pill"
+      className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium capitalize", cls, className)}
+    >
+      {label}
+    </span>
+  );
+}
+
+export default StatusPill;

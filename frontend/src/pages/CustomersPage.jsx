@@ -1,0 +1,120 @@
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api, { extractError } from "@/lib/api";
+import PageHeader from "@/components/layout/PageHeader";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import TableSkeleton from "@/components/common/LoadingSkeleton";
+import EmptyState from "@/components/common/EmptyState";
+import { Plus, Search, Users } from "lucide-react";
+import { toast } from "sonner";
+import { relativeTime } from "@/lib/format";
+import { useAuth } from "@/auth/AuthContext";
+
+function NewCustomerDialog({ onCreated }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ name: "", company: "", email: "", phone: "", notes: "" });
+  const upd = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const payload = { ...form };
+      Object.keys(payload).forEach((k) => { if (!payload[k]) delete payload[k]; });
+      const { data } = await api.post("/customers", payload);
+      toast.success("Customer created");
+      setOpen(false);
+      setForm({ name: "", company: "", email: "", phone: "", notes: "" });
+      onCreated?.(data);
+    } catch (err) { toast.error(extractError(err)); }
+    finally { setBusy(false); }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button data-testid="customers-create-button"><Plus className="size-4 mr-1" />New customer</Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[520px]">
+        <DialogHeader>
+          <DialogTitle>New customer</DialogTitle>
+          <DialogDescription>Add a customer to your shop.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={submit} className="grid gap-3">
+          <div className="grid gap-1.5"><Label>Name*</Label><Input required value={form.name} onChange={upd("name")} data-testid="customer-name-input" /></div>
+          <div className="grid gap-1.5"><Label>Company</Label><Input value={form.company} onChange={upd("company")} data-testid="customer-company-input" /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1.5"><Label>Email</Label><Input type="email" value={form.email} onChange={upd("email")} data-testid="customer-email-input" /></div>
+            <div className="grid gap-1.5"><Label>Phone</Label><Input value={form.phone} onChange={upd("phone")} data-testid="customer-phone-input" /></div>
+          </div>
+          <div className="grid gap-1.5"><Label>Notes</Label><Textarea rows={3} value={form.notes} onChange={upd("notes")} /></div>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button type="submit" disabled={busy} data-testid="customer-submit-button">{busy ? "Saving…" : "Create"}</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export default function CustomersPage() {
+  const [q, setQ] = useState("");
+  const qc = useQueryClient();
+  const { hasPerm } = useAuth();
+  const canWrite = hasPerm("customer:write");
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["customers", q],
+    queryFn: async () => (await api.get("/customers", { params: { search: q || undefined, limit: 100 } })).data,
+  });
+  const items = data?.items || [];
+
+  return (
+    <div className="space-y-4" data-testid="customers-page">
+      <PageHeader title="Customers" subtitle="Everyone you’ve done work for." actions={canWrite && <NewCustomerDialog onCreated={() => qc.invalidateQueries({ queryKey: ["customers"] })} />} />
+      <div className="flex items-center gap-2">
+        <div className="relative w-full max-w-md">
+          <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name, company, or email" className="pl-9" data-testid="customers-search-input" />
+        </div>
+      </div>
+      {isLoading ? <TableSkeleton /> : error ? (
+        <EmptyState title="Couldn’t load customers" description="Please try again." />
+      ) : items.length === 0 ? (
+        <EmptyState icon={Users} title={q ? "No matches" : "No customers yet"} description={q ? "Try a different search." : "Create your first customer to get started."} action={canWrite && !q ? <NewCustomerDialog onCreated={() => qc.invalidateQueries({ queryKey: ["customers"] })} /> : null} />
+      ) : (
+        <div className="rounded-xl border bg-card overflow-hidden">
+          <Table data-testid="customers-table">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Company</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>Added</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map((c) => (
+                <TableRow key={c.id} className="hover:bg-muted/40" data-testid={`customer-row-${c.id}`}>
+                  <TableCell><Link className="font-medium hover:underline" to={`/customers/${c.id}`}>{c.name}</Link></TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{c.company || "—"}</TableCell>
+                  <TableCell className="text-sm">{c.email || "—"}</TableCell>
+                  <TableCell className="text-sm">{c.phone || "—"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{relativeTime(c.created_at)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  );
+}

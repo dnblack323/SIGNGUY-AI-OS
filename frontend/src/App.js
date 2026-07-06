@@ -1,55 +1,67 @@
-import { useEffect } from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
-import { HOME } from "@/constants/testIds";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/auth/AuthContext";
+import RequireAuth from "@/auth/RequireAuth";
+import AppShell from "@/components/app-shell/AppShell";
+import LoginPage from "@/pages/LoginPage";
+import RegisterTenantPage from "@/pages/RegisterTenantPage";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
+import DashboardPage from "@/pages/DashboardPage";
+import CustomersPage from "@/pages/CustomersPage";
+import CustomerDetailPage from "@/pages/CustomerDetailPage";
+import QuotesPage from "@/pages/QuotesPage";
+import QuoteDetailPage from "@/pages/QuoteDetailPage";
+import OrdersPage from "@/pages/OrdersPage";
+import OrderDetailPage from "@/pages/OrderDetailPage";
+import WorkOrdersPage from "@/pages/WorkOrdersPage";
+import WorkOrderDetailPage from "@/pages/WorkOrderDetailPage";
+import InvoicesPage from "@/pages/InvoicesPage";
+import InvoiceDetailPage from "@/pages/InvoiceDetailPage";
+import DocumentsPage from "@/pages/DocumentsPage";
+import EmailHistoryPage from "@/pages/EmailHistoryPage";
+import SettingsPage from "@/pages/SettingsPage";
+import NotFoundPage from "@/pages/NotFoundPage";
+import { Toaster } from "sonner";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
-
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
-
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          data-testid={HOME.emergentLink}
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
+function LoggedInHome() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  return <Navigate to="/" replace />;
+}
 
 function App() {
   return (
-    <div className="App">
+    <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterTenantPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route element={<RequireAuth><AppShell /></RequireAuth>}>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/customers" element={<CustomersPage />} />
+            <Route path="/customers/:id" element={<CustomerDetailPage />} />
+            <Route path="/quotes" element={<QuotesPage />} />
+            <Route path="/quotes/:id" element={<QuoteDetailPage />} />
+            <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/orders/:id" element={<OrderDetailPage />} />
+            <Route path="/work-orders" element={<WorkOrdersPage />} />
+            <Route path="/work-orders/:id" element={<WorkOrderDetailPage />} />
+            <Route path="/invoices" element={<InvoicesPage />} />
+            <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
+            <Route path="/documents" element={<DocumentsPage />} />
+            <Route path="/email-history" element={<EmailHistoryPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
+          <Route path="*" element={<LoggedInHome />} />
         </Routes>
       </BrowserRouter>
-    </div>
+      <Toaster richColors position="top-right" />
+    </AuthProvider>
   );
 }
 

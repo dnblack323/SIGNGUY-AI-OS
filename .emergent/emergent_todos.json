@@ -5,46 +5,86 @@
   },
   {
     "content": "Phase 1: Scaffold + Auth + Tenant + Permissions + Sequence service",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Design agent: define light SaaS visual system",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 2: Customers (backend done)",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 3: Quotes + idempotent convert-to-order (backend done)",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 4: Orders + Order Items (backend done)",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 5: Work Orders multi per order (backend done)",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 6: Invoices one per order + Payments (backend done)",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 7: Documents/Attachments shared system (backend done)",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 8: SendGrid email service + 5 templates + email log (backend done, fails gracefully)",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 9: Audit + Dashboard (backend done)",
+    "status": "completed"
+  },
+  {
+    "content": "Frontend: AppShell, auth pages, permission gate, routing",
     "status": "in_progress"
   },
   {
-    "content": "Phase 2: Customers",
+    "content": "Frontend: Customers pages (list + detail)",
     "status": "pending"
   },
   {
-    "content": "Phase 3: Quotes + idempotent convert-to-order",
+    "content": "Frontend: Quotes pages + convert-to-order",
     "status": "pending"
   },
   {
-    "content": "Phase 4: Orders + Order Items",
+    "content": "Frontend: Orders pages + inline items editor",
     "status": "pending"
   },
   {
-    "content": "Phase 5: Work Orders (multi per order)",
+    "content": "Frontend: Work Orders pages",
     "status": "pending"
   },
   {
-    "content": "Phase 6: Invoices (one per order, idempotent) + Payments",
+    "content": "Frontend: Invoices pages + payments panel",
     "status": "pending"
   },
   {
-    "content": "Phase 7: Documents/Attachments shared system",
+    "content": "Frontend: Documents page (upload/list/attach)",
     "status": "pending"
   },
   {
-    "content": "Phase 8: SendGrid email service + 5 templates + email log",
+    "content": "Frontend: Email history + compose modal",
     "status": "pending"
   },
   {
-    "content": "Phase 9: Audit review + Dashboard",
+    "content": "Frontend: Dashboard",
     "status": "pending"
   },
   {
-    "content": "Phase 10: End-to-end testing via testing agent + fix bugs",
+    "content": "Frontend: Settings",
+    "status": "pending"
+  },
+  {
+    "content": "End-to-end testing via testing_agent_v3",
     "status": "pending"
   }
 ]

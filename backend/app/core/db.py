@@ -1,0 +1,58 @@
+"""Motor client + collection accessors + one-time index setup."""
+from __future__ import annotations
+
+import logging
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+
+from .config import get_settings
+
+logger = logging.getLogger(__name__)
+
+_settings = get_settings()
+_client: AsyncIOMotorClient = AsyncIOMotorClient(_settings.mongo_url)
+db: AsyncIOMotorDatabase = _client[_settings.db_name]
+
+
+def get_client() -> AsyncIOMotorClient:
+    return _client
+
+
+async def ensure_indexes() -> None:
+    """Create indexes idempotently. Called at FastAPI startup."""
+    # Tenants + Users
+    await db.tenants.create_index("id", unique=True)
+    await db.users.create_index("id", unique=True)
+    await db.users.create_index([("tenant_id", 1), ("email", 1)], unique=True)
+    await db.password_reset_tokens.create_index("token", unique=True)
+    await db.password_reset_tokens.create_index("expires_at")
+
+    # Sequence counters
+    await db.counters.create_index([("tenant_id", 1), ("name", 1)], unique=True)
+
+    # Domain entities — all tenant-scoped
+    for coll in ("customers", "quotes", "orders", "work_orders", "invoices", "payments",
+                 "files", "attachments", "email_logs", "audit_events"):
+        await db[coll].create_index("id", unique=True)
+        await db[coll].create_index("tenant_id")
+
+    # Sequential numbers (unique per tenant)
+    await db.quotes.create_index([("tenant_id", 1), ("number", 1)], unique=True, sparse=True)
+    await db.orders.create_index([("tenant_id", 1), ("number", 1)], unique=True, sparse=True)
+    await db.work_orders.create_index([("tenant_id", 1), ("number", 1)], unique=True, sparse=True)
+    await db.invoices.create_index([("tenant_id", 1), ("number", 1)], unique=True, sparse=True)
+
+    # One invoice per order (enforced) — user preference
+    await db.invoices.create_index([("tenant_id", 1), ("order_id", 1)], unique=True, sparse=True)
+
+    # Attachments polymorphic index
+    await db.attachments.create_index([("tenant_id", 1), ("parent_type", 1), ("parent_id", 1)])
+
+    # Audit event lookups
+    await db.audit_events.create_index([("tenant_id", 1), ("entity_type", 1), ("entity_id", 1), ("created_at", -1)])
+    await db.audit_events.create_index([("tenant_id", 1), ("created_at", -1)])
+
+    # Email logs
+    await db.email_logs.create_index([("tenant_id", 1), ("customer_id", 1), ("created_at", -1)])
+    await db.email_logs.create_index([("tenant_id", 1), ("related_type", 1), ("related_id", 1)])
+
+    logger.info("MongoDB indexes ensured")
