@@ -7,6 +7,42 @@
 > where scope/risk warrants it, reviewed with the user. This file is the source of truth for that
 > process — read it fully before starting any legacy feature migration and follow it every time.
 
+> **STEP 0 — ALWAYS DO THIS FIRST**: Before running this protocol (or implementing ANY plan at
+> all), check the CURRENT rebuild repo's own documentation for existing decisions/specs on the
+> feature, in this order:
+> 1. `/app/DOCS_INDEX.md` (source precedence rules — always check this first)
+> 2. `/app/PHASE_0_DECISIONS.md`, `/app/PHASE_0_AGENT_MANUAL_OUTLINE.md`, `/app/REBUILD_RECOVERY_PLAN.md`
+> 3. `/app/.backlogmd/work/*/index.md` and task files — shows what's already been built/decided and why (many Release 0 items are marked `status: done` with explicit scope notes, e.g. "do not build full password login until module-specific specs exist")
+> 4. Any module-specific root doc relevant to the feature (e.g. `ORDER_PORTAL_*.md` for Webstores, `CURRENT_APP_AREAS_AND_TABS.md` for navigation/IA)
+> 5. `/app/memory/PRD.md` and `/app/memory/*.md` (this session's own accumulated notes/decisions)
+> 6. Only THEN fall back to the legacy repo's `memory/*_REBUILD_DOC.md` blueprints for business-logic behavior not already decided in the current repo's own docs.
+> Never implement a plan based only on the legacy repo or only on assumption — the current rebuild
+> repo's own docs/backlog take precedence per the Source Precedence rules in `DOCS_INDEX.md`.
+
+> **STEP 0b — LEGACY REPO `memory/` FOLDER IS THE WELL-DOCUMENTED SOURCE FOR BUSINESS LOGIC**
+> (Pricing, Quotes, Orders, Invoices, etc.). Per the user's explicit instruction, this folder is
+> heavily documented — check it thoroughly, do not skip straight to writing code. Confirmed file
+> index for the highest-priority "core features first" areas (`github.com/dnblack323/signguyai/memory/`):
+> - **Orders/Quotes**: `orders_spec.md` (17KB), `NEW_ORDER_WORKFLOW_REBUILD_DOC.md` (41KB) — no
+>   separate dedicated "quotes" doc was found; Quote→Order conversion behavior is expected to live
+>   inside these two. Verify this assumption during the Quotes preflight audit and flag it if wrong.
+> - **Pricing**: `pricing_spec.md` (37KB), `pricing_quiz_spec.md` (26KB — intake questionnaire that
+>   feeds pricing), `PHASE_0_PRICING_DECISIONS_FORMULA_GOVERNANCE.md` (130KB — the pricing formula
+>   governance doc), `TIER_SYSTEM_AUDIT_REPORT.md`, `TIER_CONFIG_DEPRECATION_PLAN.md` (tier system
+>   problems + how the legacy app deprecated its own broken tier config — read before touching
+>   Plans/Tiers/Founders billing).
+> - **Invoices**: `INVOICE_FEE_STORAGE_ANALYSIS.md` (6KB).
+> - **"Avoid repeating the same mistakes" sources (read these for EVERY feature, not just once)**:
+>   `RUNNING_ISSUE_TRACKER.md` (39KB — running log of real bugs/issues hit during the legacy build),
+>   `remaining_code_issues.md` (known unresolved issues), `PRELAUNCH_PLATFORM_GAPS.md`,
+>   `PRELAUNCH_CHECKLIST.md`, `PRELAUNCH_OPEN_ITEMS_TRACKER.md`, `MASTER_HISTORY.md` /
+>   `SESSION_HISTORY.md` / `CHANGELOG.md` (historical record of what broke and why). Cross-reference
+>   the feature being migrated against these before finalizing the "Problems Found" section of the
+>   audit (Section 3.5 below) — do not rediscover a bug the legacy team already documented.
+> - Full file listing fetched via `https://api.github.com/repos/dnblack323/signguyai/contents/memory`
+>   — re-fetch this if a needed doc isn't listed above, since this list is not exhaustive of every
+>   file (60+ files exist covering AI, Webstores, Wrap Lab, Settings, Files, Email, Inventory, etc.).
+
 ---
 
 FEATURE / MODULE TO REVIEW:
