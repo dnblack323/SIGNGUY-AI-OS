@@ -102,6 +102,7 @@ const METHOD_SELECTORS = {
     { value: "cost_plus", label: "Materials + labor + overhead + markup" },
   ] },
   vehicle: { categoryKey: "vehicle_graphics", options: [
+    { value: "max_of_both", label: "Whichever is higher: package or cost-plus" },
     { value: "package_benchmark", label: "Flat package price by coverage level" },
     { value: "cost_plus", label: "Materials + labor + overhead + markup" },
   ] },
@@ -110,8 +111,9 @@ const METHOD_SELECTORS = {
     { value: "cost_plus", label: "Blank + decoration cost + markup" },
   ] },
   services: { categoryKey: "services", options: [
-    { value: "hourly", label: "Hourly rate x estimated hours" },
-    { value: "flat_fee", label: "Flat fee per job" },
+    { value: "max_of_both", label: "Whichever is higher: my rate or cost-plus" },
+    { value: "cost_plus", label: "Materials/labor cost + markup" },
+    { value: "pass_through_plus_markup", label: "Pass through outsourced costs + markup only" },
   ] },
 };
 

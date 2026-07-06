@@ -37,12 +37,21 @@ class PricingResult(BaseModel):
     category: str
     calculation_method: str
     quantity: int = 1
-    selling_price_minor: int = 0
     material_cost_minor: int = 0
     labor_cost_minor: int = 0
+    design_cost_minor: int = 0
+    setup_cost_minor: int = 0
+    finishing_cost_minor: int = 0
+    hardware_cost_minor: int = 0
+    install_cost_minor: int = 0
+    outsourcing_cost_minor: int = 0
     overhead_cost_minor: int = 0
-    markup_amount_minor: int = 0
+    base_cost_minor: int = 0
     total_cost_minor: int = 0
+    markup_amount_minor: int = 0
+    selling_price_minor: int = 0
+    minimum_charge_minor: int = 0
+    minimum_charge_applied: bool = False
     breakdown: dict[str, list[PricingBreakdownLine]] = Field(default_factory=dict)
     warnings: list[PricingWarning] = Field(default_factory=list)
     details: dict[str, Any] = Field(default_factory=dict)

@@ -574,6 +574,7 @@ h1, h2 { font-family: Manrope, sans-serif; color: #172033; }
 .order-spec-editor input, .order-spec-editor select, .order-spec-editor textarea { width: 100%; border: 1px solid var(--border); border-radius: 8px; background: white; color: #172033; padding: 9px; font: inherit; font-size: 12px; outline: 0; text-transform: none; letter-spacing: 0; font-weight: 500; }
 .order-spec-editor input[type="checkbox"] { width: 18px; height: 18px; }
 .order-spec-editor textarea { min-height: 76px; resize: vertical; }
+.order-spec-note { grid-column: 1 / -1; margin: 0; padding: 6px 0; font-size: 11px; color: var(--muted); font-style: italic; }
 .pricing-override-badge { margin: -2px 0 10px; padding: 8px 10px; border-radius: 10px; background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; font-size: 11px; font-weight: 700; }
 .pricing-override-panel { margin-top: 10px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 14px; background: #f8fafc; display: grid; grid-template-columns: 1fr 1fr auto; gap: 9px; align-items: end; }
 .pricing-override-panel label { display: flex; flex-direction: column; gap: 5px; color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }

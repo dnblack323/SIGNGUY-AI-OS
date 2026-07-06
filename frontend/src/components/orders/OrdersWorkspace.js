@@ -286,9 +286,10 @@ function OrderItemCard({ item, saveItemSpecs, calculateItem, overridePricing, up
     </div>}
     {calcResult && <PricingBreakdown calculation={calcResult} testId={item.id} />}
     {expanded && <div className="order-spec-editor">
-      {schema.map((field) => <label key={field.key}>
+      {schema.filter((field) => fieldVisible(field, specs)).map((field) => <label key={field.key}>
         <span>{field.label}{field.affects_price ? " *" : ""}</span>
-        {field.type === "select" ? <select value={specs[field.key] ?? ""} onChange={(event) => setSpec(field.key, event.target.value, field.type)}><option value="">Select</option>{field.options.map((option) => <option key={option} value={option}>{option}</option>)}</select>
+        {field.type === "note" ? <p className="order-spec-note">{field.label}</p>
+          : field.type === "select" ? <select value={specs[field.key] ?? ""} onChange={(event) => setSpec(field.key, event.target.value, field.type)}><option value="">Select</option>{field.options.map((option) => <option key={option} value={option}>{option}</option>)}</select>
           : field.type === "toggle" ? <input type="checkbox" checked={Boolean(specs[field.key])} onChange={(event) => setSpec(field.key, event.target.checked, field.type)} />
           : field.type === "textarea" ? <textarea value={specs[field.key] ?? ""} onChange={(event) => setSpec(field.key, event.target.value, field.type)} />
           : <input type={field.type === "number" ? "number" : "text"} value={specs[field.key] ?? ""} onChange={(event) => setSpec(field.key, event.target.value, field.type)} />}
@@ -363,3 +364,10 @@ function Placeholder({ icon: Icon, title, text }) { return <section className="o
 function Empty({ icon: Icon = ShoppingBag, title, text }) { return <div className="orders-empty"><Icon size={28} /><h2>{title}</h2><p>{text}</p></div>; }
 function money(value = 0) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format((Number(value) || 0) / 100); }
 function label(value = "") { return String(value || "").replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()); }
+
+function fieldVisible(field, specs) {
+  if (!field.depends_on) return true;
+  const currentValue = specs[field.depends_on.field];
+  if ("truthy" in field.depends_on) return Boolean(currentValue) === field.depends_on.truthy;
+  return currentValue === field.depends_on.equals || (field.depends_on.equals === false && !currentValue);
+}
