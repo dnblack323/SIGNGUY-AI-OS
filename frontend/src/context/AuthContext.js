@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { api, clearStoredAuthToken, getStoredAuthToken, setStoredAuthToken } from "../lib/api";
+import { api, clearStoredAuthToken, setStoredAuthToken } from "../lib/api";
 
 const AuthContext = createContext(null);
 
@@ -8,10 +8,6 @@ export function AuthProvider({ children }) {
   const [identity, setIdentity] = useState(null);
 
   const loadIdentity = useCallback(async () => {
-    if (!getStoredAuthToken()) {
-      setIdentity(false);
-      return;
-    }
     try {
       const data = await api("/auth/me");
       setIdentity(data);
