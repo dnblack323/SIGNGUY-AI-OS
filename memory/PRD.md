@@ -122,11 +122,35 @@ User's refined direction (superseded the "paused" note above): preserve category
 
 ### Status: DONE for banners category (full UI proof) + all 9 categories at backend/API level. Not yet UI-tested per-category beyond banners (vehicle_wrap/services/apparel/promo_misc/custom UI flows use the identical pattern, backend-proven via golden tests).
 
+## Session 6 (2026-02) — Full-fidelity legacy pricing engine port (per explicit user demand)
+
+User rejected the simplified Session 5 engine: "I WANT ALL PREVIOUS CATEGORY SPECIFIC CALCULATIONS AND FIELD PREFERENCES BROUGHT OVER... THE FINAL RESULT WAS PERFECT EXCEPT THE RESULTING CODE IS CRAP... SO DONT RECREATE A SIMPLE CRAPPY MODULE." This required reading the ACTUAL legacy source (not just audit docs about it).
+
+**Research done:** Pulled `backend/server.py` (4846 lines, all 9 `calculate_*` functions), `backend/models/pricing.py`, `backend/models/pricing_core.py`, `backend/routes/pricing.py` directly from the legacy GitHub repo via `curl`/GitHub API (raw.githubusercontent.com) and read every calculator function in full.
+
+**Implemented (2026-02), full rewrite of `backend/services/pricing_engine.py` (~1500 lines):**
+- Faithful port of all 9 legacy calculators as adapter functions, each reading tenant Foundation settings via `_category_config()` (mirrors legacy `get_category_pricing_config`), with shared helpers: `_find_material`/`_find_hardware` (materials/hardware_accessories library lookup), `_labor_rates`, `_calculate_overhead` (material+production-labor basis), `_labor_minutes_and_rate` (minute-based labor system incl. yard-sign special case), `_design_labor`/`_design_charge_config`, `_resolve_selling_price` (max of markup-price/margin-price/cost floor), `_quantity_discount_percent` (tiered), `_apply_rush`.
+- `_banners`: hems, grommets (corners/every_2ft/every_3ft/custom), pole pockets, reinforced corners, wind slits, specialty sewing, hardware add-ons, sidedness multipliers, event/pole-banner premiums.
+- `_rigid_signs`: sidedness, shape, thickness, finish quality multipliers, protective finish, hardware, drill prep fee, yard-sign minute-based labor path.
+- `_cut_vinyl`: masking, color-change setup fee, weeding-complexity multiplier, use-type multiplier.
+- `_digital_print`: ink-coverage-driven ink cost, lamination, mount-to-substrate, print-quality multiplier, contour cut, piece separation, trim finish, file cleanup fee, setup fee.
+- `_vehicle_wrap`: coverage-% driven area (+ custom coverage %), window perf (rear/side/full), surface prep, old-graphics removal, install-difficulty × seam-complexity multipliers, second installer, package-benchmark-vs-cost-plus-vs-max-of-both.
+- `_services`: billing units (hour/flat/piece/sqft/linear_foot/mile/trip/day), labor roles, travel/mileage, equipment rental, subcontracting with markup, permits, complexity multiplier, minimum-charge floors, manual override.
+- `_apparel`: quantity derived from size breakdown (`derive_ticket_quantity`, matches legacy's separate upstream function), brand/style, decoration method (htv/screen_print/dtf/embroidery/dtg), shop price-table-first with cost-plus fallback, plus-size/custom-name-number/specialty-finish/two-tone/leather-patch/bag-fold add-ons.
+- `_promo_misc` / `_custom`: cost-plus with resolve_selling_price; custom supports legacy's `override_enabled`+`price_override` manual override pattern.
+- `models/pricing_core.py`: `PricingResult` expanded to 8 cost buckets (material/labor/design/setup/finishing/hardware/install/outsourcing) + overhead, matching legacy's `create_standardized_pricing_result` shape.
+- `services/order_schemas.py`: fully rewritten with all legacy spec fields per category (hems/grommets/pole-pockets, sidedness/shape/thickness, ink-coverage/laminate, coverage%/window-perf/install-difficulty, billing-unit/travel/equipment, decoration-method/plus-size/etc.) plus a `depends_on` metadata rule per field for progressive disclosure.
+- Frontend: `OrdersWorkspace.js` spec editor now filters fields via `fieldVisible()` (progressive disclosure — e.g. Custom Coverage % only shows when Coverage Type = Custom). `PricingFoundationWorkspace.js` method selectors expanded to 3 options for vehicle_graphics (`max_of_both`/`package_benchmark`/`cost_plus`) and services (`max_of_both`/`cost_plus`/`pass_through_plus_markup`), matching legacy's actual `sell_method` config options.
+- Tests: `backend/tests/test_pricing_engine.py` rewritten, 17 golden tests, all passing. Full regression suite: 145/151 passing (same 6 pre-existing unrelated failures as before, confirmed via git stash in a prior session).
+- Tested end-to-end (testing_agent_v4, iteration_4.json + iteration_5.json): all 9 categories verified producing valid prices via UI, progressive disclosure verified, override flow re-verified, full Quote→Order→Invoice regression clean. 2 bugs found and fixed (override panel CSS overflow in Orders grid; vehicle_wrap/apparel Design Complexity missing depends_on) — both confirmed fixed in follow-up regression pass.
+
+**Known gaps not covered this session (documented, not silently dropped):** Materials/hardware library CRUD UI (engine supports reading `foundation.materials[]`/`foundation.hardware_accessories[]` if present, but no Settings UI to manage them yet — falls back to sensible per-category defaults). Legacy's AI-prefill-signature provenance system for services fields was intentionally excluded (UI-only field-source tagging, not a pricing calculation).
+
 ## Next Action Items
-- P1: UI-test remaining categories (vehicle_wrap, services, apparel, promo_misc, custom) for the method selector + calculate + override flows in Orders/Quotes -- backend/golden-test-proven, not yet UI-proven beyond banners.
+- P1: Materials Library + Hardware Accessories Library CRUD UI in Pricing Foundation settings (engine already supports reading these collections, just needs a management UI so shops can enter real per-material cost/sell rates instead of relying on category-aggregate fallbacks).
 - P1: Billing/Founders-Plan module (using `CHAT'S FEE STRUCTURE.pdf`).
 - P2: Re-enable Authentication (`SIGNGUYAI_AUTH_MODE=enforced`) when the user requests it.
-- Backlog: Webstores (Release 2), Wrap Lab depth, AI Hub, Employees/Payroll, Email automation for Quotes/Invoices (e.g., Resend).
+- Backlog: Webstores (Release 2), Wrap Lab depth (ensure it consumes this same pricing engine, never a separate one, when built out further), AI Hub, Employees/Payroll, Email automation for Quotes/Invoices (e.g., Resend).
 - P1: Quote Revision / Change Order workflow for orders that need a re-estimate after conversion (explicitly deferred this session, documented as future scope, not partially built).
 - P1: Customer Portal Lite quote approval (self-service, e-signature) — deferred this session; current approval is internal staff-marked only (phone/email/text/in-person).
 - P1: Invoice email automation, payment links, Stripe collection, deposits/progress billing — deferred this session by explicit user decision.
