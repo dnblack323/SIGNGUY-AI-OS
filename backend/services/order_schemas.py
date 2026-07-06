@@ -99,7 +99,7 @@ CATEGORY_SCHEMAS = {
         field("second_installer_required", "Second Installer Required", "toggle", affects_price=True, depends_on={"field": "install_required", "truthy": True}),
         field("artwork_ready", "Artwork Already Ready", "toggle", affects_price=True),
         field("artwork_needed", "Artwork Needed", "toggle", affects_price=True, depends_on={"field": "artwork_ready", "equals": False}),
-        field("design_complexity", "Design Complexity", "select", ["simple", "medium", "complex", "extreme"], True),
+        field("design_complexity", "Design Complexity", "select", ["simple", "medium", "complex", "extreme"], True, depends_on={"field": "artwork_ready", "equals": False}),
         field("rush_order", "Rush Order", "toggle", affects_price=True),
     ],
     "services": [
@@ -143,7 +143,7 @@ CATEGORY_SCHEMAS = {
         field("apparel_bag_and_fold", "Bag & Fold", "toggle", affects_price=True),
         field("artwork_ready", "Artwork Already Ready", "toggle", affects_price=True),
         field("artwork_needed", "Artwork Needed", "toggle", affects_price=True, depends_on={"field": "artwork_ready", "equals": False}),
-        field("design_complexity", "Design Complexity", "select", ["simple", "medium", "complex", "extreme"], True),
+        field("design_complexity", "Design Complexity", "select", ["simple", "medium", "complex", "extreme"], True, depends_on={"field": "artwork_ready", "equals": False}),
         field("rush_order", "Rush Order", "toggle", affects_price=True),
     ],
     "promo_misc": [
