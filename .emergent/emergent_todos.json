@@ -1,0 +1,50 @@
+[
+  {
+    "content": "Phase 0: POC — atomic Mongo sequence generator + object storage upload/signed URL",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 1: Scaffold + Auth + Tenant + Permissions + Sequence service",
+    "status": "in_progress"
+  },
+  {
+    "content": "Design agent: define light SaaS visual system",
+    "status": "in_progress"
+  },
+  {
+    "content": "Phase 2: Customers",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 3: Quotes + idempotent convert-to-order",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 4: Orders + Order Items",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 5: Work Orders (multi per order)",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 6: Invoices (one per order, idempotent) + Payments",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 7: Documents/Attachments shared system",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 8: SendGrid email service + 5 templates + email log",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 9: Audit review + Dashboard",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 10: End-to-end testing via testing agent + fix bugs",
+    "status": "pending"
+  }
+]
