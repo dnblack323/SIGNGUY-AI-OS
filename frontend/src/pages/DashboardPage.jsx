@@ -59,28 +59,29 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <ListCard title="Quotes needing follow-up" testId="list-quotes-follow-up" empty="No quotes waiting." viewAllTo="/quotes">
-              {data.quotes_follow_up.length > 0 && (
-                <ul className="divide-y">
-                  {data.quotes_follow_up.slice(0, 6).map((q) => (
-                    <li key={q.id}>
-                      <Link className="flex items-center justify-between px-4 py-3 hover:bg-muted/40" to={`/quotes/${q.id}`}>
-                        <div className="min-w-0">
-                          <div className="text-sm truncate"><span className="mono text-xs text-muted-foreground mr-2">Q-{q.number}</span>{q.job_name}</div>
-                          <div className="text-xs text-muted-foreground">{relativeTime(q.created_at)}</div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm tabular-nums">{centsToDollarsString(q.total_cents)}</span>
-                          <StatusPill kind="quote" value={q.status} />
-                          <ChevronRight className="size-4 text-muted-foreground" />
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </ListCard>
-            <div className="lg:col-span-6 hidden"></div>
+            <div className="lg:col-span-6">
+              <ListCard title="Quotes needing follow-up" testId="list-quotes-follow-up" empty="No quotes waiting." viewAllTo="/quotes">
+                {data.quotes_follow_up.length > 0 && (
+                  <ul className="divide-y">
+                    {data.quotes_follow_up.slice(0, 6).map((q) => (
+                      <li key={q.id}>
+                        <Link className="flex items-center justify-between px-4 py-3 hover:bg-muted/40" to={`/quotes/${q.id}`}>
+                          <div className="min-w-0">
+                            <div className="text-sm truncate"><span className="mono text-xs text-muted-foreground mr-2">Q-{q.number}</span>{q.job_name}</div>
+                            <div className="text-xs text-muted-foreground">{relativeTime(q.created_at)}</div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm tabular-nums">{centsToDollarsString(q.total_cents)}</span>
+                            <StatusPill kind="quote" value={q.status} />
+                            <ChevronRight className="size-4 text-muted-foreground" />
+                          </div>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </ListCard>
+            </div>
 
             <div className="lg:col-span-6">
               <ListCard title="Work orders in production" testId="list-work-orders-attention" empty="Nothing in the shop right now." viewAllTo="/work-orders">

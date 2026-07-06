@@ -225,3 +225,53 @@ async def _dev_last_reset_token(email: EmailStr) -> dict:
     if not doc:
         raise HTTPException(status_code=404, detail="No unused token")
     return {"token": doc["token"], "expires_at": doc["expires_at"]}
+
+
+@router.get("/dev-config")
+async def dev_config() -> dict:
+    """Tells the frontend whether the dev auth bypass is enabled."""
+    return {"dev_bypass": _settings.auth_dev_bypass}
+
+
+DEV_TENANT_SLUG = "dev-shop"
+DEV_OWNER_EMAIL = "dev@signguy-dev.example.com"
+
+
+@router.post("/dev-login", response_model=TokenOut)
+async def dev_login() -> TokenOut:
+    """DEV-ONLY: auto-provision a Dev Shop + owner and return a JWT.
+
+    Requires AUTH_DEV_BYPASS=true in the backend env.
+    Must be disabled in production.
+    """
+    if not _settings.auth_dev_bypass:
+        raise HTTPException(status_code=404, detail="Dev bypass disabled")
+
+    tenant = await db.tenants.find_one({"slug": DEV_TENANT_SLUG})
+    if not tenant:
+        t = Tenant(name="Dev Shop", slug=DEV_TENANT_SLUG)
+        await db.tenants.insert_one(prepare_for_mongo(t.model_dump()))
+        tenant = await db.tenants.find_one({"id": t.id})
+
+    user = await db.users.find_one({"tenant_id": tenant["id"], "email": DEV_OWNER_EMAIL})
+    if not user:
+        u = User(
+            tenant_id=tenant["id"],
+            email=DEV_OWNER_EMAIL,
+            full_name="Dev Owner",
+            role="owner",
+            password_hash=hash_password("dev-bypass-not-a-real-password"),
+        )
+        await db.users.insert_one(prepare_for_mongo(u.model_dump()))
+        user = await db.users.find_one({"id": u.id})
+
+    await db.users.update_one({"id": user["id"]}, {"$set": {"last_login_at": utc_now().isoformat()}})
+    token = create_access_token(subject=user["id"], tenant_id=tenant["id"])
+    u_out = serialize_doc(user)
+    u_out.pop("password_hash", None)
+    return TokenOut(
+        access_token=token,
+        user=u_out,
+        tenant=serialize_doc(tenant),
+        permissions=permissions_for_role(user.get("role", "owner")),
+    )

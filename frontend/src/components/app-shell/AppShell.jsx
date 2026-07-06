@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { Home, Users, FileText, ShoppingBag, Wrench, Receipt, Folder, Mail, Settings, LogOut, Building2, ChevronsLeft } from "lucide-react";
+import { Home, Users, FileText, ShoppingBag, Wrench, Receipt, Folder, Mail, Settings, LogOut, Building2, ChevronsLeft, ShieldAlert } from "lucide-react";
 import { useAuth } from "@/auth/AuthContext";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -82,9 +82,16 @@ function SidebarInner({ onNavigate }) {
 export default function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const loc = useLocation();
+  const { devBypass } = useAuth();
   const active = NAV.find((it) => it.to !== "/" && loc.pathname.startsWith(it.to)) || (loc.pathname === "/" && NAV[0]);
   return (
     <div className="min-h-dvh bg-background text-foreground">
+      {devBypass && (
+        <div className="w-full bg-amber-50 border-b border-amber-200 text-amber-900 text-xs px-4 py-1.5 flex items-center justify-center gap-2" data-testid="dev-bypass-banner">
+          <ShieldAlert className="size-3.5" />
+          <span><span className="font-semibold">Auth bypass ON</span> · you're browsing as Dev Shop owner. Set <span className="mono">AUTH_DEV_BYPASS=false</span> before deploying.</span>
+        </div>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr]">
         {/* Desktop sidebar */}
         <aside className="hidden lg:flex flex-col border-r bg-[hsl(var(--sidebar))] h-dvh sticky top-0">

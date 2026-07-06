@@ -30,6 +30,11 @@ class Settings:
         self.sendgrid_from_email: str | None = os.environ.get("SENDGRID_FROM_EMAIL") or None
         self.sendgrid_from_name: str = os.environ.get("SENDGRID_FROM_NAME", "SignGuy AI")
 
+        # Dev-only auth bypass: when true, /api/auth/dev-login is enabled.
+        # Frontend uses it to auto-provision a Dev Shop so the user doesn't have to log in.
+        # MUST be set to false before production/deploy.
+        self.auth_dev_bypass: bool = os.environ.get("AUTH_DEV_BYPASS", "false").lower() == "true"
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
