@@ -107,9 +107,26 @@ User wants **category calculation FAMILIES** to be explicit and **shop-owner-sel
 
 ### Status: PAUSED — awaiting user's refined direction on category families + selectable calculation methods before Steps 1-5 (data architecture → engine rewrite → override provenance → live frontend recalc → testing) begin.
 
+## Session 5 (2026-02) — Pricing Foundation + Engine rebuild IMPLEMENTED (per refined user direction)
+
+User's refined direction (superseded the "paused" note above): preserve category-specific formulas via **one shared `PricingResult` contract + one tenant settings source**, with each category having its own calculation adapter keyed to the correct driver (square footage, coverage, labor hours, unit cost, apparel quantity, manual). Override provenance (reason/actor/timestamp) required now. Wrap Lab/Webstores exist as preview/module tracks and must not get separate pricing engines (none was built for them — confirmed no duplication).
+
+**Implemented (2026-02):**
+- `backend/models/pricing_core.py` (NEW): shared `PricingResult`, `PricingWarning`, `PricingBreakdownLine`, `PricingOverride` pydantic contract used by every category.
+- `backend/services/pricing_engine.py` (REWRITTEN): `calculate_item_price(category, quantity, specs, foundation)` now reads the tenant's saved Pricing Foundation settings (fixing the "disconnected calculator" bug where it previously used only hardcoded constants). Category adapters: `_area_family` (banners/rigid_signs/cut_vinyl/digital_print — driver: sqft, methods `cost_plus`|`sell_rate_per_sqft`), `_vehicle_wrap` (driver: coverage %, methods `cost_plus`|`package_benchmark`), `_services` (driver: labor hours, methods `hourly`|`flat_fee`), `_apparel` (driver: quantity, methods `cost_plus`|`price_table`), `_promo_misc` (driver: unit cost, single method), `_custom` (manual, single method). `FOUNDATION_CATEGORY_ALIASES` fixes a real legacy-style naming mismatch: Order/Quote items use `vehicle_wrap`/`promo_misc`, Pricing Foundation settings use `vehicle_graphics`/`promotional` for the same categories.
+- Warnings: `below_cost` (critical, selling < total cost) and `below_margin` (warning, margin below tenant's `target_profit_margin_percent`).
+- Override provenance: `override_reason`, `override_actor_id`, `override_at` added to `OrderItemPayload`/`Patch` and `QuoteLineItemPayload`/`Patch`. New endpoints `POST /order-items/{id}/override-pricing` and `POST /quotes/{quote_id}/items/{item_id}/override-pricing` (both use `get_identity_context`, which works even in preview auth mode via `preview_context()` → `user_id="preview-user"`). Every override is recorded as an audit event (`pricing_override_set` / `quote_line_item_pricing_override_set`) with original + override price and reason.
+- Frontend: `PricingFoundationWorkspace.js` now has a "How should this category be priced?" method selector per category (segmented toggle, persists to `category_defaults.<key>.calculation_method`). `OrdersWorkspace.js` / `QuotesWorkspace.js` item cards show a `PricingBreakdown` component (method, itemized material/labor/overhead lines, warnings) after Calculate, plus an Override Price panel (price + required reason) with an override badge showing who/why once set.
+- Tests: `backend/tests/test_pricing_engine.py` (13 golden-formula unit tests, all categories + both methods where applicable) + `backend/tests/test_pricing_api_flows.py` (added by testing agent, 6 API-level tests). Full regression suite: 131/137 passing (6 pre-existing unrelated failures: 3 auth-bypass-mode tests expecting 401, 3 broken "generate-quote-draft" tests referencing a route that was already missing before this session — confirmed via `git stash`).
+- Tested end-to-end (testing_agent_v4, iteration_3.json): Settings method selector, Orders/Quotes calculate + override flows, full Quote→Order→Invoice regression. Zero bugs found.
+
+### Status: DONE for banners category (full UI proof) + all 9 categories at backend/API level. Not yet UI-tested per-category beyond banners (vehicle_wrap/services/apparel/promo_misc/custom UI flows use the identical pattern, backend-proven via golden tests).
+
 ## Next Action Items
-- P0: Resume Pricing Foundation/Engine rebuild once user provides refined direction on category calculation families and selectable per-category calculation methods (see Session 4 above).
-- P0 (superseded pending above): Pricing Calculator Preflight Audit — needs legacy `pricing.py` (112KB) + `PRICING_FOUNDATION_*.md` docs reviewed to resolve migration conflict #3 (canonical interim pricing engine vs. legacy pricing engine), per the same Feature Migration Preflight Protocol used for this session.
+- P1: UI-test remaining categories (vehicle_wrap, services, apparel, promo_misc, custom) for the method selector + calculate + override flows in Orders/Quotes -- backend/golden-test-proven, not yet UI-proven beyond banners.
+- P1: Billing/Founders-Plan module (using `CHAT'S FEE STRUCTURE.pdf`).
+- P2: Re-enable Authentication (`SIGNGUYAI_AUTH_MODE=enforced`) when the user requests it.
+- Backlog: Webstores (Release 2), Wrap Lab depth, AI Hub, Employees/Payroll, Email automation for Quotes/Invoices (e.g., Resend).
 - P1: Quote Revision / Change Order workflow for orders that need a re-estimate after conversion (explicitly deferred this session, documented as future scope, not partially built).
 - P1: Customer Portal Lite quote approval (self-service, e-signature) — deferred this session; current approval is internal staff-marked only (phone/email/text/in-person).
 - P1: Invoice email automation, payment links, Stripe collection, deposits/progress billing — deferred this session by explicit user decision.
