@@ -159,9 +159,9 @@ export function OrdersWorkspace({ onToast, onNavigate }) {
       const invoice = await api(`/orders/${activeOrder.id}/generate-invoice`, { method: "POST" });
       setInvoiceDrafts(await api(`/orders/${activeOrder.id}/invoices`));
       api(`/orders/${activeOrder.id}/activity`).then(setActivity).catch(() => {});
-      onToast?.(`Invoice draft ${invoice.invoice_number} generated`);
+      onToast?.(`Invoice ${invoice.invoice_number} generated`);
     } catch (error) {
-      onToast?.(error.message || "Unable to generate invoice draft");
+      onToast?.(error.message || "Unable to generate invoice");
     }
   };
 
