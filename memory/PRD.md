@@ -83,8 +83,33 @@ Investigated current rebuild code + current rebuild's own control docs (`PHASE_0
 - **Frontend**: new `components/quotes/QuotesWorkspace.js` (Operations → Quotes) and `components/invoices/InvoicesWorkspace.js` (Business Management → Billing), wired in `App.js`. `OrdersWorkspace.js` FinancialTab rewritten: removed "Generate Quote Draft" button/state, added a "Source Quote" panel (shows quote number + link, or "Direct Order").
 - **Testing**: 18/18 new backend pytest (`backend/tests/test_quotes_orders_invoices_flow.py`) + full Playwright UI pass, both 100%. Verified: quote CRUD/line-items/pricing-calc/send/approve(with method+note+contact capture)/decline, idempotent convert-to-order (double-click does not duplicate the order), 409 locks on converted/declined quotes, 409 on approving a quote with zero line items, Direct Order path unaffected, Orders Financial tab shows Source Quote + Generate Invoice (old button confirmed gone), Production tab's Work Order Draft unaffected, global Invoices list + partial/full payment recording + status-dropdown restrictions (can't manually set paid/partially_paid), sequential numbering, and full regression of Customers/Order Items/DocuLink/Dashboard. Fixed one cosmetic toast-wording issue found by testing agent.
 
+## Session 4 (2026-02) — Pricing Module Deep Review (PAUSED by user, mid-planning)
+
+### Review completed
+Read all 12 legacy pricing docs the user asked for (3 core specs: `PHASE_0_PRICING_DECISIONS_FORMULA_GOVERNANCE.md`, `PRICING_SPEC.md`/`pricing_spec.md`, `pricing_quiz_spec.md`) plus 9 audit/cleanup reports, PLUS discovered and read a full "Pricing Legacy Rebuild Handoff" package in the legacy repo's `memory/` folder that goes further than the handoff summary indicated: `PRICING_LEGACY_REBUILD_HANDOFF_MASTER.md`, `PRICING_REBUILD_BUILD_ORDER.md` (10-phase plan), `PRICING_LEGACY_ARCHITECTURE_MISTAKES_AND_PREVENTION.md` (28 documented mistakes M-01 to M-28), `PRICING_FEATURES_DO_NOT_PORT.md`.
+
+**Root cause confirmed in OUR current code**: `backend/services/pricing_engine.py` (used by both `routes/orders.py` and `routes/quotes.py`) uses hardcoded `MATERIALS`/`DEFAULTS` module constants and never reads the tenant's saved `PricingFoundationDocument` settings at all — this is the exact legacy M-02/M-03 "disconnected calculator" mistake repeating itself in the rebuild.
+
+**Key locked lessons to apply when this resumes:**
+- Canonical overhead formula: `overhead = (material_cost + production_labor_cost) × overhead%` — design/install/setup/shipping are pass-through, excluded from the overhead basis.
+- One `PricingResult` shape per calculation: itemized breakdown (materials/labor/overhead/markup) + typed warnings (below_cost, below_margin) — not just a total number.
+- Manual overrides need reason + who + when recorded (currently zero provenance in `orders.py`/`quotes.py`).
+- Money: keep using `Decimal` → integer cents at the end (current code already does this correctly, unlike legacy's raw floats).
+- Single settings entry point already correct (`PricingFoundationWorkspace.js`, no duplicate wizard) — do not create a second one.
+- Wrap Lab / Webstores don't exist yet in this rebuild, so legacy's dual-engine mistake (M-01) doesn't apply yet — just build Vehicle Wraps correctly once as a normal category.
+
+### USER CLARIFICATION (2026-02, this session) — must be incorporated into the next plan
+User wants **category calculation FAMILIES** to be explicit and **shop-owner-selectable in Settings**, not just implementation detail baked into `pricing_engine.py`:
+- **Area/dimension-based family** (banners, rigid signs, cut vinyl, digital print, vehicle wraps, etc.) — priced by sqft/sq-inch.
+- **Table/unit-based family** (apparel/T-shirts, etc.) — priced by quantity tiers, not area.
+- Within a category, the user wants the **shop owner to choose the calculation METHOD** in Pricing Foundation settings — e.g. for an area-based category, choose between "materials + labor + overhead cost-plus" method vs. a simpler "flat price-per-sqft" method — whichever matches how that specific shop owner actually thinks about their own pricing.
+- User explicitly asked to **pause this task** to investigate further and give more detailed direction before implementation resumes. **No code was written this session.**
+
+### Status: PAUSED — awaiting user's refined direction on category families + selectable calculation methods before Steps 1-5 (data architecture → engine rewrite → override provenance → live frontend recalc → testing) begin.
+
 ## Next Action Items
-- P0: Pricing Calculator Preflight Audit — needs legacy `pricing.py` (112KB) + `PRICING_FOUNDATION_*.md` docs reviewed to resolve migration conflict #3 (canonical interim pricing engine vs. legacy pricing engine), per the same Feature Migration Preflight Protocol used for this session.
+- P0: Resume Pricing Foundation/Engine rebuild once user provides refined direction on category calculation families and selectable per-category calculation methods (see Session 4 above).
+- P0 (superseded pending above): Pricing Calculator Preflight Audit — needs legacy `pricing.py` (112KB) + `PRICING_FOUNDATION_*.md` docs reviewed to resolve migration conflict #3 (canonical interim pricing engine vs. legacy pricing engine), per the same Feature Migration Preflight Protocol used for this session.
 - P1: Quote Revision / Change Order workflow for orders that need a re-estimate after conversion (explicitly deferred this session, documented as future scope, not partially built).
 - P1: Customer Portal Lite quote approval (self-service, e-signature) — deferred this session; current approval is internal staff-marked only (phone/email/text/in-person).
 - P1: Invoice email automation, payment links, Stripe collection, deposits/progress billing — deferred this session by explicit user decision.
