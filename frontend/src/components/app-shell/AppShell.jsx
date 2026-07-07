@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { Home, Users, FileText, ShoppingBag, Wrench, Receipt, Folder, Mail, Settings, LogOut, Building2, ChevronsLeft, ShieldAlert } from "lucide-react";
+import { Home, Users, FileText, ShoppingBag, Wrench, Receipt, Folder, Mail, Settings, LogOut, Building2, ChevronsLeft, ShieldAlert, Calculator, DollarSign } from "lucide-react";
 import { useAuth } from "@/auth/AuthContext";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -17,6 +17,8 @@ const NAV = [
   { to: "/invoices", label: "Invoices", icon: Receipt, perm: "invoice:read", testId: "nav-invoices" },
   { to: "/documents", label: "Documents", icon: Folder, perm: "document:read", testId: "nav-documents" },
   { to: "/email-history", label: "Email History", icon: Mail, perm: "email:read", testId: "nav-email-history" },
+  { to: "/pricing-foundation", label: "Pricing Foundation", icon: DollarSign, perm: "pricing:read", testId: "nav-pricing-foundation" },
+  { to: "/pricing-calculator", label: "Pricing Calculator", icon: Calculator, perm: "pricing:calculate", testId: "nav-pricing-calculator" },
   { to: "/settings", label: "Settings", icon: Settings, perm: null, testId: "nav-settings" },
 ];
 

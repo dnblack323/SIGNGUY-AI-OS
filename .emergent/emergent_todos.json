@@ -1,54 +1,38 @@
 [
   {
-    "content": "Phase 0: POC — atomic Mongo sequence generator + object storage upload/signed URL",
+    "content": "Starter Defaults Pack: canonical constant + PRICING_DEFAULTS_AUDIT.md",
     "status": "completed"
   },
   {
-    "content": "Phase 1: Scaffold + Auth + Tenant + Permissions + Sequence service",
+    "content": "Backend: pricing_settings model + tenant auto-init service",
     "status": "completed"
   },
   {
-    "content": "Design agent: define light SaaS visual system",
+    "content": "Backend: pricing calculator service (canonical response schema)",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Customers (backend + frontend)",
+    "content": "Backend: wizard suggestions engine (banners full, others scaffolded)",
     "status": "completed"
   },
   {
-    "content": "Phase 3: Quotes + idempotent convert-to-order (backend + frontend)",
+    "content": "Backend: /api/pricing router + permissions + role wiring",
     "status": "completed"
   },
   {
-    "content": "Phase 4: Orders + Order Items (backend + frontend)",
+    "content": "Frontend: nav items, /pricing-foundation page",
     "status": "completed"
   },
   {
-    "content": "Phase 5: Work Orders multi per order (backend + frontend)",
+    "content": "Frontend: /pricing-calculator page",
     "status": "completed"
   },
   {
-    "content": "Phase 6: Invoices one per order + Payments (backend + frontend)",
+    "content": "Frontend: reusable CategorySetupWizard + banner config",
     "status": "completed"
   },
   {
-    "content": "Phase 7: Documents/Attachments shared system (backend + frontend)",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 8: SendGrid email service + 5 templates + email log (fails gracefully)",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 9: Audit + Dashboard (backend + frontend)",
-    "status": "completed"
-  },
-  {
-    "content": "End-to-end testing via testing_agent_v3 — 100% backend, all frontend flows verified",
-    "status": "completed"
-  },
-  {
-    "content": "Post-MVP: Dev Auth Bypass (AUTH_DEV_BYPASS=true) with visible warning banner",
+    "content": "Verify: acceptance tests — all key flows verified via curl + browser",
     "status": "completed"
   }
 ]

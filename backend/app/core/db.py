@@ -55,4 +55,7 @@ async def ensure_indexes() -> None:
     await db.email_logs.create_index([("tenant_id", 1), ("customer_id", 1), ("created_at", -1)])
     await db.email_logs.create_index([("tenant_id", 1), ("related_type", 1), ("related_id", 1)])
 
+    # Pricing settings \u2014 one doc per tenant
+    await db.pricing_settings.create_index("tenant_id", unique=True)
+
     logger.info("MongoDB indexes ensured")

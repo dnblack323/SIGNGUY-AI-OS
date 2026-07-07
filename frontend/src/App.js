@@ -22,6 +22,8 @@ import DocumentsPage from "@/pages/DocumentsPage";
 import EmailHistoryPage from "@/pages/EmailHistoryPage";
 import SettingsPage from "@/pages/SettingsPage";
 import NotFoundPage from "@/pages/NotFoundPage";
+import PricingFoundationPage from "@/pages/PricingFoundationPage";
+import PricingCalculatorPage from "@/pages/PricingCalculatorPage";
 import { Toaster } from "sonner";
 
 function LoggedInHome() {
@@ -54,6 +56,8 @@ function App() {
             <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
             <Route path="/documents" element={<DocumentsPage />} />
             <Route path="/email-history" element={<EmailHistoryPage />} />
+            <Route path="/pricing-foundation" element={<PricingFoundationPage />} />
+            <Route path="/pricing-calculator" element={<PricingCalculatorPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>

@@ -39,6 +39,10 @@ class Perm(str, Enum):
     USER_WRITE = "user:write"
     # Dashboard
     DASHBOARD_READ = "dashboard:read"
+    # Pricing
+    PRICING_READ = "pricing:read"
+    PRICING_WRITE = "pricing:write"
+    PRICING_CALCULATE = "pricing:calculate"
 
 
 OWNER_ADMIN_PERMS: list[str] = [p.value for p in Perm]
@@ -53,6 +57,7 @@ STAFF_PERMS: list[str] = [
     Perm.EMAIL_READ.value, Perm.EMAIL_SEND.value,
     Perm.AUDIT_READ.value,
     Perm.DASHBOARD_READ.value,
+    Perm.PRICING_READ.value, Perm.PRICING_CALCULATE.value,
 ]
 
 ROLE_PERMISSIONS: dict[str, list[str]] = {
